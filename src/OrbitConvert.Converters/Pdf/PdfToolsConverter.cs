@@ -228,6 +228,7 @@ public sealed class PdfToolsConverter : IConverter
                     ct.ThrowIfCancellationRequested();
                     output.AddPage(page);
                 }
+                RecompressStreams(output, ct);
                 output.Save(path);
             }, ct).ConfigureAwait(false);
         }
@@ -261,6 +262,32 @@ public sealed class PdfToolsConverter : IConverter
         }
         context.ResultNote = $"Reduced by {100.0 * (before - after) / before:0}%";
         return [path];
+    }
+
+    /// <summary>
+    /// Imported streams are copied byte for byte, so compress them explicitly: unfiltered streams are
+    /// deflated, and plain Flate streams are re-deflated at the best level. Image codecs (DCT, CCITT,
+    /// JBIG2, JPX) and predictor-encoded streams are left untouched, so nothing is decoded lossily.
+    /// </summary>
+    private static void RecompressStreams(PdfDocument document, CancellationToken ct)
+    {
+        foreach (var obj in document.Internals.GetAllObjects())
+        {
+            ct.ThrowIfCancellationRequested();
+            if (obj is not PdfDictionary { Stream: { } stream } dict || stream.Value.Length == 0)
+            {
+                continue;
+            }
+            if (!stream.IsFiltered())
+            {
+                stream.Zip();
+            }
+            else if (dict.Elements.GetName("/Filter") == "/FlateDecode" && !dict.Elements.ContainsKey("/DecodeParms")
+                     && stream.TryUncompress())
+            {
+                stream.Zip();
+            }
+        }
     }
 
     private static void CopyInfo(PdfDocument source, PdfDocument target)
@@ -339,6 +366,8 @@ public sealed class PdfToolsConverter : IConverter
         }
     }
 
+    // PDFium is available on Windows, Linux and macOS; the check below guards the calls at run time.
+#pragma warning disable CA1416
     private static IReadOnlyList<string> Render(ConversionContext context, CancellationToken ct)
     {
         if (!OperatingSystem.IsWindows() && !OperatingSystem.IsLinux() && !OperatingSystem.IsMacOS())
@@ -399,6 +428,8 @@ public sealed class PdfToolsConverter : IConverter
         context.ResultNote = single ? null : $"{pages.Count} images at {dpi} dpi";
         return single ? [Directory.EnumerateFiles(folder).Single(f => f.EndsWith(format.PrimaryExtension, StringComparison.OrdinalIgnoreCase))] : [folder];
     }
+
+#pragma warning restore CA1416
 
     private static string DescribeRenderError(Exception ex) =>
         ex.Message.Contains("password", StringComparison.OrdinalIgnoreCase)

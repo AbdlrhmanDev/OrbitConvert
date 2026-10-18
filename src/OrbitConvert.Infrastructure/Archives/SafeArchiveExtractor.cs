@@ -142,9 +142,13 @@ public static class SafeArchiveExtractor
         {
             return null;
         }
-        if (Path.IsPathRooted(name) || name.Contains(':') || name.StartsWith(Path.DirectorySeparatorChar))
+        if (Path.IsPathRooted(name) || name.StartsWith(Path.DirectorySeparatorChar))
         {
             throw Unsafe(entryName, "absolute path");
+        }
+        if (name.Contains(':'))
+        {
+            throw Unsafe(entryName, "drive letter or alternate data stream");
         }
 
         var segments = name.Split(Path.DirectorySeparatorChar, StringSplitOptions.RemoveEmptyEntries);

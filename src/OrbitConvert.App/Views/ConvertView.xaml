@@ -1,0 +1,437 @@
+<UserControl x:Class="OrbitConvert.App.Views.ConvertView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:sys="clr-namespace:System;assembly=System.Runtime"
+             xmlns:c="clr-namespace:OrbitConvert.App.Controls">
+    <UserControl.Resources>
+        <Style x:Key="OptionLabel" TargetType="TextBlock" BasedOn="{StaticResource Text.Secondary}">
+            <Setter Property="Margin" Value="0,10,0,4" />
+        </Style>
+        <Style x:Key="OptionGroup" TargetType="StackPanel">
+            <Setter Property="Margin" Value="0,0,0,8" />
+        </Style>
+        <Style x:Key="ChipList" TargetType="ListBox">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="ScrollViewer.HorizontalScrollBarVisibility" Value="Disabled" />
+            <Setter Property="ItemsPanel">
+                <Setter.Value>
+                    <ItemsPanelTemplate>
+                        <WrapPanel />
+                    </ItemsPanelTemplate>
+                </Setter.Value>
+            </Setter>
+            <Setter Property="ItemContainerStyle">
+                <Setter.Value>
+                    <Style TargetType="ListBoxItem">
+                        <Setter Property="Margin" Value="0,0,8,8" />
+                        <Setter Property="Cursor" Value="Hand" />
+                        <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+                        <Setter Property="ToolTip" Value="{Binding ToolTip}" />
+                        <Setter Property="AutomationProperties.Name" Value="{Binding Label}" />
+                        <Setter Property="Template">
+                            <Setter.Value>
+                                <ControlTemplate TargetType="ListBoxItem">
+                                    <Border x:Name="Bd" Background="{DynamicResource Brush.SurfaceAlt}" BorderBrush="{DynamicResource Brush.Border}"
+                                            BorderThickness="1.5" CornerRadius="8" Padding="10,7" MinWidth="92">
+                                        <ContentPresenter />
+                                    </Border>
+                                    <ControlTemplate.Triggers>
+                                        <Trigger Property="IsMouseOver" Value="True">
+                                            <Setter TargetName="Bd" Property="Background" Value="{DynamicResource Brush.SurfaceHover}" />
+                                        </Trigger>
+                                        <Trigger Property="IsSelected" Value="True">
+                                            <Setter TargetName="Bd" Property="BorderBrush" Value="{DynamicResource Brush.Accent}" />
+                                            <Setter TargetName="Bd" Property="Background" Value="{DynamicResource Brush.AccentSubtle}" />
+                                        </Trigger>
+                                        <Trigger Property="IsKeyboardFocused" Value="True">
+                                            <Setter TargetName="Bd" Property="BorderBrush" Value="{DynamicResource Brush.Accent}" />
+                                        </Trigger>
+                                        <DataTrigger Binding="{Binding IsAvailable}" Value="False">
+                                            <Setter TargetName="Bd" Property="Opacity" Value="0.5" />
+                                        </DataTrigger>
+                                    </ControlTemplate.Triggers>
+                                </ControlTemplate>
+                            </Setter.Value>
+                        </Setter>
+                    </Style>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </UserControl.Resources>
+
+    <Grid Margin="32,28,24,24">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*" MinWidth="420" />
+            <ColumnDefinition Width="24" />
+            <ColumnDefinition Width="380" />
+        </Grid.ColumnDefinitions>
+
+        <!-- Left: staging -->
+        <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Padding="0,0,8,0">
+            <StackPanel>
+                <TextBlock Text="Convert" Style="{StaticResource Text.Display}" />
+                <TextBlock Text="Add files, choose a format, adjust options, and start." Style="{StaticResource Text.Secondary}" Margin="0,4,0,20" />
+
+                <!-- Files -->
+                <Border Style="{StaticResource Card}" Padding="16">
+                    <StackPanel>
+                        <DockPanel Margin="0,0,0,10">
+                            <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                                <Button Style="{StaticResource SubtleButton}" Command="{Binding AddFilesCommand}">
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="&#xE710;" Style="{StaticResource Glyph}" FontSize="12" Margin="0,0,6,0" Foreground="{DynamicResource Brush.Text}" />
+                                        <TextBlock Text="Add files" />
+                                    </StackPanel>
+                                </Button>
+                                <Button Content="Clear" Style="{StaticResource SubtleButton}" Command="{Binding ClearFilesCommand}"
+                                        Visibility="{Binding HasFiles, Converter={StaticResource BoolToVisibility}}" />
+                            </StackPanel>
+                            <TextBlock Text="Files" Style="{StaticResource Text.Subtitle}" VerticalAlignment="Center" />
+                        </DockPanel>
+
+                        <!-- Empty state -->
+                        <Border CornerRadius="10" Padding="20" Background="{DynamicResource Brush.SurfaceAlt}"
+                                Visibility="{Binding HasFiles, Converter={StaticResource BoolToVisibility}, ConverterParameter=Invert}">
+                            <StackPanel HorizontalAlignment="Center">
+                                <TextBlock Text="&#xE8E5;" Style="{StaticResource Glyph}" FontSize="26" Margin="0,0,0,8" />
+                                <TextBlock Text="No files yet" Style="{StaticResource Text.Subtitle}" HorizontalAlignment="Center" />
+                                <TextBlock Text="Drop files anywhere in this window or use Add files." Style="{StaticResource Text.Secondary}" HorizontalAlignment="Center" />
+                            </StackPanel>
+                        </Border>
+
+                        <ListBox ItemsSource="{Binding Files}" SelectedItem="{Binding SelectedFile}" MaxHeight="260" BorderThickness="0"
+                                 Background="Transparent" ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                                 Visibility="{Binding HasFiles, Converter={StaticResource BoolToVisibility}}"
+                                 AutomationProperties.Name="Files to convert">
+                            <ListBox.ItemContainerStyle>
+                                <Style TargetType="ListBoxItem" BasedOn="{StaticResource {x:Type ListBoxItem}}">
+                                    <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                                    <Setter Property="Padding" Value="6,4" />
+                                    <Setter Property="AutomationProperties.Name" Value="{Binding Name}" />
+                                </Style>
+                            </ListBox.ItemContainerStyle>
+                            <ListBox.ItemTemplate>
+                                <DataTemplate>
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="Auto" />
+                                        </Grid.ColumnDefinitions>
+                                        <c:FormatBadge Label="{Binding TypeLabel}" Category="{Binding Category}" Width="26" Height="31" Margin="0,0,12,0" />
+                                        <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                            <TextBlock Text="{Binding Name}" Style="{StaticResource Text.Body}" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis"
+                                                       ToolTip="{Binding Input.Path}" />
+                                            <TextBlock Style="{StaticResource Text.Caption}" TextTrimming="CharacterEllipsis">
+                                                <Run Text="{Binding TypeName, Mode=OneWay}" /><Run Text=" · " /><Run Text="{Binding SizeText, Mode=OneWay}" />
+                                            </TextBlock>
+                                            <TextBlock Text="{Binding Warning}" Style="{StaticResource Text.Caption}" Foreground="{DynamicResource Brush.Warning}"
+                                                       TextWrapping="Wrap" Visibility="{Binding Warning, Converter={StaticResource NullToVisibility}}" />
+                                        </StackPanel>
+                                        <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
+                                            <Button Content="&#xE70E;" Style="{StaticResource IconButton}" ToolTip="Move up"
+                                                    Command="{Binding DataContext.MoveUpCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" CommandParameter="{Binding}" />
+                                            <Button Content="&#xE70D;" Style="{StaticResource IconButton}" ToolTip="Move down"
+                                                    Command="{Binding DataContext.MoveDownCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" CommandParameter="{Binding}" />
+                                        </StackPanel>
+                                        <Button Grid.Column="3" Content="&#xE711;" Style="{StaticResource IconButton}" ToolTip="Remove from list"
+                                                Command="{Binding DataContext.RemoveFileCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" CommandParameter="{Binding}" />
+                                    </Grid>
+                                </DataTemplate>
+                            </ListBox.ItemTemplate>
+                        </ListBox>
+                        <TextBlock Text="Analyzing files…" Style="{StaticResource Text.Caption}" Margin="0,6,0,0"
+                                   Visibility="{Binding IsAnalyzing, Converter={StaticResource BoolToVisibility}}" />
+                    </StackPanel>
+                </Border>
+
+                <!-- Targets -->
+                <Border Style="{StaticResource Card}" Padding="16" Margin="0,14,0,0" Visibility="{Binding HasFiles, Converter={StaticResource BoolToVisibility}}">
+                    <StackPanel>
+                        <TextBlock Text="Convert to" Style="{StaticResource Text.Subtitle}" Margin="0,0,0,10" />
+                        <TextBlock Text="{Binding TargetsMessage}" Style="{StaticResource Text.Secondary}" Foreground="{DynamicResource Brush.Warning}" Margin="0,0,0,8"
+                                   Visibility="{Binding TargetsMessage, Converter={StaticResource NullToVisibility}}" />
+                        <ListBox ItemsSource="{Binding Targets}" SelectedItem="{Binding SelectedTarget}" Style="{StaticResource ChipList}"
+                                 AutomationProperties.Name="Output formats">
+                            <ListBox.ItemTemplate>
+                                <DataTemplate>
+                                    <StackPanel Orientation="Horizontal">
+                                        <c:FormatBadge Label="{Binding Label}" Category="{Binding Category}" Glyph="{Binding Glyph}" Width="20" Height="24" Margin="0,0,8,0" />
+                                        <TextBlock Text="{Binding Label}" FontWeight="SemiBold" VerticalAlignment="Center" Foreground="{DynamicResource Brush.Text}" />
+                                        <TextBlock Text=" β" FontWeight="Bold" Foreground="{DynamicResource Brush.Warning}" VerticalAlignment="Center"
+                                                   Visibility="{Binding Experimental, Converter={StaticResource BoolToVisibility}}" />
+                                    </StackPanel>
+                                </DataTemplate>
+                            </ListBox.ItemTemplate>
+                        </ListBox>
+                        <!-- Selected target explanation -->
+                        <StackPanel DataContext="{Binding SelectedTarget}" Visibility="{Binding Converter={StaticResource NullToVisibility}}">
+                            <TextBlock Text="{Binding Target.Description}" Style="{StaticResource Text.Secondary}" />
+                            <TextBlock Style="{StaticResource Text.Secondary}" Foreground="{DynamicResource Brush.Danger}" Margin="0,4,0,0"
+                                       Visibility="{Binding IsAvailable, Converter={StaticResource BoolToVisibility}, ConverterParameter=Invert}">
+                                <Run Text="Unavailable: " FontWeight="SemiBold" /><Run Text="{Binding Target.UnavailableReason, Mode=OneWay}" />
+                            </TextBlock>
+                            <Border CornerRadius="6" Padding="10,8" Margin="0,8,0,0" Background="{DynamicResource Brush.SurfaceAlt}"
+                                    Visibility="{Binding Target.Limitations, Converter={StaticResource NullToVisibility}}">
+                                <DockPanel>
+                                    <TextBlock Text="&#xE946;" Style="{StaticResource Glyph}" FontSize="13" VerticalAlignment="Top" Margin="0,2,8,0" />
+                                    <TextBlock Text="{Binding Target.Limitations}" Style="{StaticResource Text.Secondary}" FontSize="12" />
+                                </DockPanel>
+                            </Border>
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+
+                <!-- Options -->
+                <Border Style="{StaticResource Card}" Padding="16" Margin="0,14,0,0" Visibility="{Binding HasOptions, Converter={StaticResource BoolToVisibility}}">
+                    <StackPanel>
+                        <DockPanel>
+                            <Button DockPanel.Dock="Right" Content="Reset to defaults" Style="{StaticResource SubtleButton}" FontSize="12" Command="{Binding ResetOptionsCommand}" />
+                            <StackPanel>
+                                <TextBlock Text="Options" Style="{StaticResource Text.Subtitle}" />
+                                <TextBlock Text="{Binding OptionsScopeText}" Style="{StaticResource Text.Caption}" />
+                            </StackPanel>
+                        </DockPanel>
+                        <CheckBox Content="Different options for each file" IsChecked="{Binding PerFileOptions}" Margin="0,10,0,0" />
+
+                        <!-- Image -->
+                        <StackPanel Style="{StaticResource OptionGroup}" Visibility="{Binding ShowImageOptions, Converter={StaticResource BoolToVisibility}}">
+                            <TextBlock Style="{StaticResource OptionLabel}"><Run Text="Quality: " /><Run Text="{Binding EditingOptions.Image.Quality, Mode=OneWay}" FontWeight="SemiBold" /></TextBlock>
+                            <Slider Minimum="1" Maximum="100" Value="{Binding EditingOptions.Image.Quality}" IsSnapToTickEnabled="True" TickFrequency="1"
+                                    AutomationProperties.Name="Quality" ToolTip="Used by JPG, WebP, AVIF and HEIC" />
+                            <Grid Margin="0,4,0,0">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition /><ColumnDefinition Width="12" /><ColumnDefinition /><ColumnDefinition Width="12" /><ColumnDefinition />
+                                </Grid.ColumnDefinitions>
+                                <StackPanel>
+                                    <TextBlock Text="Max width (px)" Style="{StaticResource OptionLabel}" />
+                                    <TextBox Text="{Binding EditingOptions.Image.MaxWidth, TargetNullValue={x:Static sys:String.Empty}, UpdateSourceTrigger=PropertyChanged}"
+                                             AutomationProperties.Name="Maximum width in pixels" />
+                                </StackPanel>
+                                <StackPanel Grid.Column="2">
+                                    <TextBlock Text="Max height (px)" Style="{StaticResource OptionLabel}" />
+                                    <TextBox Text="{Binding EditingOptions.Image.MaxHeight, TargetNullValue={x:Static sys:String.Empty}, UpdateSourceTrigger=PropertyChanged}"
+                                             AutomationProperties.Name="Maximum height in pixels" />
+                                </StackPanel>
+                                <StackPanel Grid.Column="4">
+                                    <TextBlock Text="Rotate" Style="{StaticResource OptionLabel}" />
+                                    <ComboBox ItemsSource="{Binding Rotations}" DisplayMemberPath="Label" SelectedValuePath="Value"
+                                              SelectedValue="{Binding EditingOptions.Image.Rotation}" AutomationProperties.Name="Rotation" />
+                                </StackPanel>
+                            </Grid>
+                            <TextBlock Text="Resizing keeps the aspect ratio and never enlarges. Leave empty to keep the original size." Style="{StaticResource Text.Caption}" Margin="0,4,0,0" />
+                            <TextBlock Text="Crop (pixels: left, top, width, height — optional)" Style="{StaticResource OptionLabel}" />
+                            <UniformGrid Columns="4">
+                                <TextBox Margin="0,0,6,0" Text="{Binding EditingOptions.Image.CropX, TargetNullValue={x:Static sys:String.Empty}}" AutomationProperties.Name="Crop left" />
+                                <TextBox Margin="0,0,6,0" Text="{Binding EditingOptions.Image.CropY, TargetNullValue={x:Static sys:String.Empty}}" AutomationProperties.Name="Crop top" />
+                                <TextBox Margin="0,0,6,0" Text="{Binding EditingOptions.Image.CropWidth, TargetNullValue={x:Static sys:String.Empty}}" AutomationProperties.Name="Crop width" />
+                                <TextBox Text="{Binding EditingOptions.Image.CropHeight, TargetNullValue={x:Static sys:String.Empty}}" AutomationProperties.Name="Crop height" />
+                            </UniformGrid>
+                            <WrapPanel Margin="0,12,0,0">
+                                <CheckBox Content="Remove metadata (EXIF, GPS)" IsChecked="{Binding EditingOptions.Image.StripMetadata}" Margin="0,0,18,6" />
+                                <CheckBox Content="Convert colors to sRGB" IsChecked="{Binding EditingOptions.Image.ConvertToSrgb}" Margin="0,0,18,6" />
+                                <CheckBox Content="Keep animation" IsChecked="{Binding EditingOptions.Image.KeepAnimation}" Margin="0,0,18,6" />
+                            </WrapPanel>
+                            <TextBlock Text="Background for transparent areas (JPG, BMP, PDF)" Style="{StaticResource OptionLabel}" />
+                            <TextBox Text="{Binding EditingOptions.Image.BackgroundColor}" Width="120" HorizontalAlignment="Left" AutomationProperties.Name="Background color" />
+                        </StackPanel>
+
+                        <!-- Video -->
+                        <StackPanel Style="{StaticResource OptionGroup}" Visibility="{Binding ShowVideoOptions, Converter={StaticResource BoolToVisibility}}">
+                            <Grid>
+                                <Grid.ColumnDefinitions><ColumnDefinition /><ColumnDefinition Width="12" /><ColumnDefinition /></Grid.ColumnDefinitions>
+                                <StackPanel>
+                                    <TextBlock Text="Resolution" Style="{StaticResource OptionLabel}" />
+                                    <ComboBox ItemsSource="{Binding Resolutions}" DisplayMemberPath="Label" SelectedValuePath="Value" SelectedValue="{Binding EditingOptions.Video.Resolution}" AutomationProperties.Name="Resolution" />
+                                    <TextBlock Text="Quality" Style="{StaticResource OptionLabel}" />
+                                    <ComboBox ItemsSource="{Binding VideoQualities}" DisplayMemberPath="Label" SelectedValuePath="Value" SelectedValue="{Binding EditingOptions.Video.Quality}" AutomationProperties.Name="Video quality" />
+                                    <TextBlock Text="Audio bitrate" Style="{StaticResource OptionLabel}" />
+                                    <ComboBox ItemsSource="{Binding Bitrates}" DisplayMemberPath="Label" SelectedValuePath="Value" SelectedValue="{Binding EditingOptions.Video.AudioBitrateKbps}" AutomationProperties.Name="Audio bitrate" />
+                                </StackPanel>
+                                <StackPanel Grid.Column="2">
+                                    <TextBlock Text="Video codec" Style="{StaticResource OptionLabel}" />
+                                    <ComboBox ItemsSource="{Binding Codecs}" DisplayMemberPath="Label" SelectedValuePath="Value" SelectedValue="{Binding EditingOptions.Video.Codec}" AutomationProperties.Name="Video codec" />
+                                    <TextBlock Text="Frame rate" Style="{StaticResource OptionLabel}" />
+                                    <ComboBox ItemsSource="{Binding FrameRates}" DisplayMemberPath="Label" SelectedValuePath="Value" SelectedValue="{Binding EditingOptions.Video.FrameRate}" AutomationProperties.Name="Frame rate" />
+                                    <CheckBox Content="Remove audio" IsChecked="{Binding EditingOptions.Video.RemoveAudio}" Margin="0,18,0,0" />
+                                </StackPanel>
+                            </Grid>
+                        </StackPanel>
+
+                        <!-- GIF -->
+                        <StackPanel Style="{StaticResource OptionGroup}" Visibility="{Binding ShowGifOptions, Converter={StaticResource BoolToVisibility}}">
+                            <TextBlock Style="{StaticResource OptionLabel}"><Run Text="GIF frame rate: " /><Run Text="{Binding EditingOptions.Video.GifFps, Mode=OneWay}" FontWeight="SemiBold" /><Run Text=" fps" /></TextBlock>
+                            <Slider Minimum="5" Maximum="30" Value="{Binding EditingOptions.Video.GifFps}" IsSnapToTickEnabled="True" TickFrequency="1" AutomationProperties.Name="GIF frame rate" />
+                            <TextBlock Text="GIF maximum width (px)" Style="{StaticResource OptionLabel}" />
+                            <TextBox Text="{Binding EditingOptions.Video.GifMaxWidth}" Width="120" HorizontalAlignment="Left" AutomationProperties.Name="GIF maximum width" />
+                        </StackPanel>
+
+                        <!-- Audio -->
+                        <StackPanel Style="{StaticResource OptionGroup}" Visibility="{Binding ShowAudioOptions, Converter={StaticResource BoolToVisibility}}">
+                            <Grid>
+                                <Grid.ColumnDefinitions><ColumnDefinition /><ColumnDefinition Width="12" /><ColumnDefinition /><ColumnDefinition Width="12" /><ColumnDefinition /></Grid.ColumnDefinitions>
+                                <StackPanel>
+                                    <TextBlock Text="Bitrate (lossy formats)" Style="{StaticResource OptionLabel}" />
+                                    <ComboBox ItemsSource="{Binding Bitrates}" DisplayMemberPath="Label" SelectedValuePath="Value" SelectedValue="{Binding EditingOptions.Audio.BitrateKbps}" AutomationProperties.Name="Audio bitrate" />
+                                </StackPanel>
+                                <StackPanel Grid.Column="2">
+                                    <TextBlock Text="Sample rate" Style="{StaticResource OptionLabel}" />
+                                    <ComboBox ItemsSource="{Binding SampleRates}" DisplayMemberPath="Label" SelectedValuePath="Value" SelectedValue="{Binding EditingOptions.Audio.SampleRate}" AutomationProperties.Name="Sample rate" />
+                                </StackPanel>
+                                <StackPanel Grid.Column="4">
+                                    <TextBlock Text="Channels" Style="{StaticResource OptionLabel}" />
+                                    <ComboBox ItemsSource="{Binding ChannelChoices}" DisplayMemberPath="Label" SelectedValuePath="Value" SelectedValue="{Binding EditingOptions.Audio.Channels}" AutomationProperties.Name="Channels" />
+                                </StackPanel>
+                            </Grid>
+                        </StackPanel>
+
+                        <!-- PDF -->
+                        <StackPanel Style="{StaticResource OptionGroup}" Visibility="{Binding ShowPdfPages, Converter={StaticResource BoolToVisibility}}">
+                            <TextBlock Text="Pages (e.g. 1-3, 5, 8-). Empty means all pages." Style="{StaticResource OptionLabel}" />
+                            <TextBox Text="{Binding EditingOptions.Pdf.PageRange, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="Page range" />
+                        </StackPanel>
+                        <StackPanel Style="{StaticResource OptionGroup}" Visibility="{Binding ShowPdfRotate, Converter={StaticResource BoolToVisibility}}">
+                            <TextBlock Text="Rotation" Style="{StaticResource OptionLabel}" />
+                            <ComboBox ItemsSource="{Binding PdfRotations}" DisplayMemberPath="Label" SelectedValuePath="Value" SelectedValue="{Binding EditingOptions.Pdf.RotationDegrees}" AutomationProperties.Name="Rotation" />
+                        </StackPanel>
+                        <StackPanel Style="{StaticResource OptionGroup}" Visibility="{Binding ShowPdfDpi, Converter={StaticResource BoolToVisibility}}">
+                            <TextBlock Text="Resolution" Style="{StaticResource OptionLabel}" />
+                            <ComboBox ItemsSource="{Binding Dpis}" DisplayMemberPath="Label" SelectedValuePath="Value" SelectedValue="{Binding EditingOptions.Pdf.ImageDpi}" AutomationProperties.Name="Resolution" />
+                        </StackPanel>
+                        <StackPanel Style="{StaticResource OptionGroup}" Visibility="{Binding ShowPdfCompression, Converter={StaticResource BoolToVisibility}}">
+                            <TextBlock Text="Compression" Style="{StaticResource OptionLabel}" />
+                            <ComboBox ItemsSource="{Binding PdfCompressionLevels}" DisplayMemberPath="Label" SelectedValuePath="Value" SelectedValue="{Binding EditingOptions.Pdf.Compression}" AutomationProperties.Name="Compression level" />
+                        </StackPanel>
+
+                        <!-- Document -->
+                        <StackPanel Style="{StaticResource OptionGroup}" Visibility="{Binding ShowDocumentOptions, Converter={StaticResource BoolToVisibility}}">
+                            <CheckBox Content="Allow documents to include local images and files" IsChecked="{Binding EditingOptions.Document.AllowLocalResources}" Margin="0,12,0,4" />
+                            <TextBlock Style="{StaticResource Text.Caption}" TextWrapping="Wrap"
+                                       Text="Off by default for safety: an untrusted Markdown or HTML file could otherwise pull any file from this computer into the output." />
+                        </StackPanel>
+
+                        <!-- Archive -->
+                        <StackPanel Style="{StaticResource OptionGroup}" Visibility="{Binding ShowArchiveOptions, Converter={StaticResource BoolToVisibility}}">
+                            <Grid>
+                                <Grid.ColumnDefinitions><ColumnDefinition /><ColumnDefinition Width="12" /><ColumnDefinition /></Grid.ColumnDefinitions>
+                                <StackPanel>
+                                    <TextBlock Text="Archive name (optional)" Style="{StaticResource OptionLabel}" />
+                                    <TextBox Text="{Binding EditingOptions.Archive.ArchiveName}" AutomationProperties.Name="Archive name" />
+                                </StackPanel>
+                                <StackPanel Grid.Column="2">
+                                    <TextBlock Text="Compression" Style="{StaticResource OptionLabel}" />
+                                    <ComboBox ItemsSource="{Binding ArchiveLevels}" DisplayMemberPath="Label" SelectedValuePath="Value" SelectedValue="{Binding EditingOptions.Archive.Compression}" AutomationProperties.Name="Compression" />
+                                </StackPanel>
+                            </Grid>
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+
+                <!-- Output -->
+                <Border Style="{StaticResource Card}" Padding="16" Margin="0,14,0,0" Visibility="{Binding HasFiles, Converter={StaticResource BoolToVisibility}}">
+                    <StackPanel>
+                        <TextBlock Text="Save to" Style="{StaticResource Text.Subtitle}" Margin="0,0,0,8" />
+                        <RadioButton Content="Beside the original files" IsChecked="{Binding SaveBesideOriginal}" GroupName="Output" Margin="0,0,0,6" />
+                        <DockPanel>
+                            <RadioButton Content="Folder:" GroupName="Output" VerticalAlignment="Center" Margin="0,0,8,0"
+                                         IsChecked="{Binding SaveBesideOriginal, Converter={StaticResource InverseBool}}" />
+                            <Button DockPanel.Dock="Right" Content="Browse…" Margin="8,0,0,0" Command="{Binding BrowseOutputFolderCommand}" />
+                            <TextBox Text="{Binding OutputFolder}" IsEnabled="{Binding SaveBesideOriginal, Converter={StaticResource InverseBool}}"
+                                     AutomationProperties.Name="Output folder" />
+                        </DockPanel>
+                        <TextBlock Text="If a file with the same name exists" Style="{StaticResource OptionLabel}" />
+                        <ComboBox ItemsSource="{Binding CollisionChoices}" DisplayMemberPath="Label" SelectedValuePath="Value"
+                                  SelectedValue="{Binding Collision}" Width="280" HorizontalAlignment="Left" AutomationProperties.Name="Name collision" />
+                        <TextBlock Text="Original files are never overwritten." Style="{StaticResource Text.Caption}" Margin="0,6,0,0" />
+                    </StackPanel>
+                </Border>
+
+                <DockPanel Margin="0,16,0,8">
+                    <Button DockPanel.Dock="Left" Style="{StaticResource PrimaryButton}" Command="{Binding StartCommand}" Padding="26,10"
+                            AutomationProperties.Name="Start conversion">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="&#xE768;" FontFamily="{StaticResource IconFont}" FontSize="13" VerticalAlignment="Center" Margin="0,0,8,0" />
+                            <TextBlock Text="Start conversion" />
+                        </StackPanel>
+                    </Button>
+                    <TextBlock Text="{Binding StatusMessage}" Style="{StaticResource Text.Secondary}" VerticalAlignment="Center" Margin="16,0,0,0" />
+                </DockPanel>
+            </StackPanel>
+        </ScrollViewer>
+
+        <!-- Right: queue -->
+        <Border Grid.Column="2" Style="{StaticResource Card}" Padding="0">
+            <DockPanel>
+                <StackPanel DockPanel.Dock="Top" Margin="16,14,10,8">
+                    <TextBlock Text="Queue" Style="{StaticResource Text.Subtitle}" />
+                    <WrapPanel Margin="0,6,0,0">
+                        <Button Content="Pause waiting" Style="{StaticResource SubtleButton}" FontSize="12" Padding="8,4" Command="{Binding PauseAllCommand}" />
+                        <Button Content="Resume" Style="{StaticResource SubtleButton}" FontSize="12" Padding="8,4" Command="{Binding ResumeAllCommand}" />
+                        <Button Content="Cancel all" Style="{StaticResource SubtleButton}" FontSize="12" Padding="8,4" Command="{Binding CancelAllCommand}" />
+                        <Button Content="Clear finished" Style="{StaticResource SubtleButton}" FontSize="12" Padding="8,4" Command="{Binding ClearFinishedCommand}" />
+                    </WrapPanel>
+                </StackPanel>
+                <Grid>
+                    <TextBlock Text="Conversions you start appear here." Style="{StaticResource Text.Secondary}" Margin="16,8"
+                               Visibility="{Binding HasJobs, Converter={StaticResource BoolToVisibility}, ConverterParameter=Invert}" />
+                    <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                        <ItemsControl ItemsSource="{Binding Jobs}" Margin="8,0,8,8" Focusable="False" AutomationProperties.Name="Conversion queue">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Border Margin="0,0,0,6" Padding="10,8" CornerRadius="8" Background="{DynamicResource Brush.SurfaceAlt}">
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="24" />
+                                                <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="Auto" />
+                                            </Grid.ColumnDefinitions>
+                                            <TextBlock Text="{Binding Status, Converter={StaticResource JobStatusGlyph}}" Style="{StaticResource Glyph}"
+                                                       VerticalAlignment="Top" Margin="0,3,0,0" HorizontalAlignment="Left"
+                                                       Foreground="{Binding Status, Converter={StaticResource JobStatusBrush}}" />
+                                            <StackPanel Grid.Column="1">
+                                                <TextBlock Text="{Binding Title}" Style="{StaticResource Text.Body}" FontSize="13" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis"
+                                                           ToolTip="{Binding Title}" />
+                                                <TextBlock Style="{StaticResource Text.Caption}" TextWrapping="Wrap">
+                                                    <Run Text="{Binding Status, Converter={StaticResource JobStatusText}, Mode=OneWay}"
+                                                         Foreground="{Binding Status, Converter={StaticResource JobStatusBrush}}" /><Run Text="  " /><Run Text="{Binding Note, Mode=OneWay}" />
+                                                </TextBlock>
+                                                <TextBlock Text="{Binding Error}" Style="{StaticResource Text.Caption}" Foreground="{DynamicResource Brush.Danger}" TextWrapping="Wrap"
+                                                           Visibility="{Binding CanRetry, Converter={StaticResource BoolToVisibility}}" ToolTip="{Binding TechnicalDetail}" />
+                                                <ProgressBar Style="{StaticResource SlimProgress}" Margin="0,6,0,2" Maximum="100"
+                                                             Value="{Binding Progress, Converter={StaticResource ProgressPercent}}"
+                                                             IsIndeterminate="{Binding Progress, Converter={StaticResource IsNegative}}"
+                                                             Visibility="{Binding IsActive, Converter={StaticResource BoolToVisibility}}" />
+                                            </StackPanel>
+                                            <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Top" Margin="4,0,0,0">
+                                                <Button Content="&#xE769;" Style="{StaticResource IconButton}" ToolTip="Pause" Width="28" Height="28"
+                                                        Visibility="{Binding CanPause, Converter={StaticResource BoolToVisibility}}"
+                                                        Command="{Binding DataContext.PauseJobCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" CommandParameter="{Binding}" />
+                                                <Button Content="&#xE768;" Style="{StaticResource IconButton}" ToolTip="Resume" Width="28" Height="28"
+                                                        Visibility="{Binding CanResume, Converter={StaticResource BoolToVisibility}}"
+                                                        Command="{Binding DataContext.ResumeJobCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" CommandParameter="{Binding}" />
+                                                <Button Content="&#xE711;" Style="{StaticResource IconButton}" ToolTip="Cancel" Width="28" Height="28"
+                                                        Visibility="{Binding CanCancel, Converter={StaticResource BoolToVisibility}}"
+                                                        Command="{Binding DataContext.CancelJobCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" CommandParameter="{Binding}" />
+                                                <Button Content="&#xE72C;" Style="{StaticResource IconButton}" ToolTip="Retry" Width="28" Height="28"
+                                                        Visibility="{Binding CanRetry, Converter={StaticResource BoolToVisibility}}"
+                                                        Command="{Binding DataContext.RetryJobCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" CommandParameter="{Binding}" />
+                                                <Button Content="&#xE8B7;" Style="{StaticResource IconButton}" ToolTip="Show in folder" Width="28" Height="28"
+                                                        Visibility="{Binding IsFinished, Converter={StaticResource BoolToVisibility}}"
+                                                        Command="{Binding DataContext.RevealJobCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" CommandParameter="{Binding}" />
+                                                <Button Content="&#xE74D;" Style="{StaticResource IconButton}" ToolTip="Remove from list" Width="28" Height="28"
+                                                        Visibility="{Binding IsFinished, Converter={StaticResource BoolToVisibility}}"
+                                                        Command="{Binding DataContext.RemoveJobCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" CommandParameter="{Binding}" />
+                                            </StackPanel>
+                                        </Grid>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </ScrollViewer>
+                </Grid>
+            </DockPanel>
+        </Border>
+    </Grid>
+</UserControl>

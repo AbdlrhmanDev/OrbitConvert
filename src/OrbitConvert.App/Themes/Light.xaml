@@ -1,0 +1,36 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <!-- Semantic color tokens, light theme. Every custom surface references these by key. -->
+    <SolidColorBrush x:Key="Brush.Background" Color="#F3F4F8" />
+    <SolidColorBrush x:Key="Brush.Sidebar" Color="#ECEDF3" />
+    <SolidColorBrush x:Key="Brush.Surface" Color="#FFFFFF" />
+    <SolidColorBrush x:Key="Brush.SurfaceAlt" Color="#F7F8FB" />
+    <SolidColorBrush x:Key="Brush.SurfaceHover" Color="#EEF0F6" />
+    <SolidColorBrush x:Key="Brush.Border" Color="#E1E3EA" />
+    <SolidColorBrush x:Key="Brush.BorderStrong" Color="#C9CCD6" />
+    <SolidColorBrush x:Key="Brush.Text" Color="#1B1D24" />
+    <SolidColorBrush x:Key="Brush.TextSecondary" Color="#555B69" />
+    <SolidColorBrush x:Key="Brush.TextTertiary" Color="#7D8392" />
+    <SolidColorBrush x:Key="Brush.Accent" Color="#5144D3" />
+    <SolidColorBrush x:Key="Brush.AccentHover" Color="#4337BF" />
+    <SolidColorBrush x:Key="Brush.AccentSubtle" Color="#E9E7FB" />
+    <SolidColorBrush x:Key="Brush.OnAccent" Color="#FFFFFF" />
+    <SolidColorBrush x:Key="Brush.Success" Color="#1E8A55" />
+    <SolidColorBrush x:Key="Brush.Danger" Color="#C92A2A" />
+    <SolidColorBrush x:Key="Brush.Warning" Color="#A86A00" />
+    <SolidColorBrush x:Key="Brush.DropHighlight" Color="#DCD8FA" />
+
+    <SolidColorBrush x:Key="Brush.RadialDisc" Color="#EBFAFAFD" />
+    <SolidColorBrush x:Key="Brush.RadialBorder" Color="#40000000" />
+    <SolidColorBrush x:Key="Brush.RadialItem" Color="#FFFFFFFF" />
+    <SolidColorBrush x:Key="Brush.RadialCenter" Color="#FFFFFFFF" />
+
+    <SolidColorBrush x:Key="Brush.Category.Image" Color="#1F9D6B" />
+    <SolidColorBrush x:Key="Brush.Category.Video" Color="#D9480F" />
+    <SolidColorBrush x:Key="Brush.Category.Audio" Color="#7048E8" />
+    <SolidColorBrush x:Key="Brush.Category.Document" Color="#1C6FD1" />
+    <SolidColorBrush x:Key="Brush.Category.Pdf" Color="#D6336C" />
+    <SolidColorBrush x:Key="Brush.Category.Archive" Color="#9C6D00" />
+    <SolidColorBrush x:Key="Brush.Category.Other" Color="#5C6475" />
+    <Color x:Key="Color.Shadow">#33000000</Color>
+</ResourceDictionary>

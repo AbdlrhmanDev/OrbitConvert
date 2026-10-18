@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256" role="img" aria-label="OrbitConvert logo">
+  <defs>
+    <linearGradient id="disc" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#5B4BE0"/>
+      <stop offset="1" stop-color="#14B8D6"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="0.3" cy="0.25" r="0.6">
+      <stop offset="0" stop-color="#fff" stop-opacity="0.33"/>
+      <stop offset="1" stop-color="#fff" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <circle cx="128" cy="128" r="120" fill="url(#disc)"/>
+  <circle cx="128" cy="128" r="120" fill="url(#glow)"/>
+  <g transform="rotate(-28 128 128)" fill="none">
+    <path d="M 30,128 A 98,42 0 0 1 226,128" stroke="#fff" stroke-opacity="0.5" stroke-width="10"/>
+  </g>
+  <circle cx="128" cy="128" r="46" fill="#fff"/>
+  <g fill="none" stroke="url(#disc)" stroke-width="9" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M 106,120 A 24,24 0 0 1 148,112 M 141,103 L 149,113 L 137,117"/>
+    <path d="M 150,136 A 24,24 0 0 1 108,144 M 115,153 L 107,143 L 119,139"/>
+  </g>
+  <g transform="rotate(-28 128 128)" fill="none">
+    <path d="M 226,128 A 98,42 0 0 1 30,128" stroke="#fff" stroke-opacity="0.9" stroke-width="12" stroke-linecap="round"/>
+  </g>
+  <circle cx="216" cy="98" r="15" fill="#fff" stroke="url(#disc)" stroke-width="4"/>
+</svg>
