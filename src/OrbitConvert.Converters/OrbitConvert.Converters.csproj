@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <RootNamespace>OrbitConvert.Converters</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\OrbitConvert.Core\OrbitConvert.Core.csproj" />
+    <ProjectReference Include="..\OrbitConvert.Infrastructure\OrbitConvert.Infrastructure.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Magick.NET-Q8-AnyCPU" />
+    <PackageReference Include="PDFsharp" />
+    <PackageReference Include="PDFtoImage" />
+    <PackageReference Include="SharpCompress" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" />
+  </ItemGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="OrbitConvert.Converters.Tests" />
+    <InternalsVisibleTo Include="OrbitConvert.Integration.Tests" />
+  </ItemGroup>
+</Project>

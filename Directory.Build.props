@@ -1,0 +1,21 @@
+<Project>
+  <PropertyGroup>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+    <WarningsAsErrors>nullable</WarningsAsErrors>
+    <Deterministic>true</Deterministic>
+
+    <Version>0.1.0</Version>
+    <Authors>OrbitConvert contributors</Authors>
+    <Company>OrbitConvert</Company>
+    <Product>OrbitConvert</Product>
+    <Copyright>Copyright (c) 2026 OrbitConvert contributors</Copyright>
+    <RepositoryUrl>https://github.com/AbdlrhmanDev/OrbitConvert</RepositoryUrl>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+
+    <!-- Never phone home from the build either. -->
+    <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
+  </PropertyGroup>
+</Project>
