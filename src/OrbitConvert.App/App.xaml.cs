@@ -104,6 +104,34 @@ public partial class App : Application, IMainWindowHost
 
         var command = args.Command == StartupArguments.Show && settings.Current.StartMinimizedToTray ? StartupArguments.Background : args.Command;
         Handle(command, args.Files);
+        _ = CheckForUpdatesIfEnabledAsync();
+    }
+
+    /// <summary>Opt-in only: at most once a day, ask GitHub for the latest release number.</summary>
+    private async Task CheckForUpdatesIfEnabledAsync()
+    {
+        var services = _services!;
+        var store = services.GetRequiredService<ISettingsStore>();
+        var settings = store.Current;
+        if (!settings.CheckForUpdates || settings.LastUpdateCheck is { } last && DateTimeOffset.Now - last < TimeSpan.FromDays(1))
+        {
+            return;
+        }
+        try
+        {
+            var info = await services.GetRequiredService<Infrastructure.Updates.UpdateChecker>().CheckAsync(CancellationToken.None);
+            settings.LastUpdateCheck = DateTimeOffset.Now;
+            store.Save(settings);
+            if (info is { IsNewer: true })
+            {
+                services.GetRequiredService<NotificationService>().Show("OrbitConvert update available",
+                    $"Version {info.Latest} is available. See Settings → Updates.", null);
+            }
+        }
+        catch (Exception ex) when (ex is System.Net.Http.HttpRequestException or TaskCanceledException or System.Text.Json.JsonException or IOException)
+        {
+            _logger?.LogInformation(ex, "Update check failed");
+        }
     }
 
     private void RegisterAppServices(IServiceCollection services)

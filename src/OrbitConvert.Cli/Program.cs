@@ -237,6 +237,12 @@ public static class Program
             "7zip" or "7z" or "7-zip" => ToolPackages.SevenZip,
             _ => throw new CliUsageException($"Unknown tool '{name}'. Choose ffmpeg, pandoc or 7zip."),
         };
+        var installer = sp.GetRequiredService<DependencyInstaller>();
+        if (installer.IsInstalledByOrbitConvert(package) && !o.Has("--force"))
+        {
+            Console.WriteLine($"{package.Name} is already installed in {installer.InstallDirectory(package)} (use --force to reinstall).");
+            return ExitOk;
+        }
         Console.WriteLine($"{package.Name} {package.Version}");
         Console.WriteLine($"  Source:  {package.DownloadUrl}");
         Console.WriteLine($"  License: {package.License}");
@@ -250,7 +256,6 @@ public static class Program
                 return ExitFailed;
             }
         }
-        var installer = sp.GetRequiredService<DependencyInstaller>();
         var lastPct = -1;
         await installer.InstallAsync(package, new Progress<DownloadProgress>(p =>
         {
@@ -287,7 +292,7 @@ public static class Program
               orbitconvert-cli pdf-info <file.pdf>             Show PDF metadata
               orbitconvert-cli test-archive <file.zip|.7z>     Verify archive integrity (CRC)
               orbitconvert-cli tools                           Show external tool status
-              orbitconvert-cli install-tool <ffmpeg|pandoc|7zip> [--yes]
+              orbitconvert-cli install-tool <ffmpeg|pandoc|7zip> [--yes] [--force]
 
             Output options:
               --out <folder>        Destination folder (default: beside each original)
@@ -321,7 +326,7 @@ internal sealed class CliOptions
 {
     private static readonly HashSet<string> Flags =
     [
-        "--overwrite", "--skip", "--details", "--yes", "--strip-metadata", "--srgb", "--no-animation", "--no-audio", "--allow-local-resources",
+        "--overwrite", "--skip", "--details", "--yes", "--force", "--strip-metadata", "--srgb", "--no-animation", "--no-audio", "--allow-local-resources",
     ];
 
     private readonly Dictionary<string, string> _values = new(StringComparer.OrdinalIgnoreCase);

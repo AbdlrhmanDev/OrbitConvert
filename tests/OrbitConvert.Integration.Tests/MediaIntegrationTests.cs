@@ -133,8 +133,12 @@ public class MediaIntegrationTests(IntegrationFixture fx)
 
         // AV1 encoding is slow enough to still be running when we cancel.
         var run = fx.ConvertAsync(input, "webm", new ConversionOptions { Video = { Codec = VideoCodec.AV1 } }, cts.Token);
-        await Task.Delay(1500);
-        Assert.NotEmpty(FfmpegProcessIds().Except(before));
+        for (var i = 0; i < 200 && !FfmpegProcessIds().Except(before).Any(); i++)
+        {
+            await Task.Delay(50);
+        }
+        Assert.NotEmpty(FfmpegProcessIds().Except(before)); // the encode is really running
+        await Task.Delay(500);
         cts.Cancel();
         var result = await run;
 

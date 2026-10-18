@@ -39,7 +39,7 @@ public sealed class PdfToolsConverter : IConverter
                     Output = KnownFormats.Pdf, Priority = 5, Description = "Combine PDFs into one document, in the selected order" },
             new() { TargetKey = CombineImagesKey, Label = "Combine to PDF", Kind = RouteKind.Combine,
                     Inputs = ConversionRoute.Formats(ImageMagickConverter.RasterInputs.Where(f => f != KnownFormats.Ico).ToArray()),
-                    MinInputs = 2, Output = KnownFormats.Pdf, Priority = 6, Description = "One PDF with a page per image" },
+                    MinInputs = 2, Output = KnownFormats.Pdf, Priority = 20, Description = "One PDF with a page per image" },
             new() { TargetKey = SplitKey, Label = "Split pages", Kind = RouteKind.Extract, Inputs = PdfOnly,
                     Output = KnownFormats.Pdf, Priority = 70, Description = "One PDF per page, in a new folder" },
             new() { TargetKey = ExtractKey, Label = "Extract pages", Kind = RouteKind.Transform, Inputs = PdfOnly,

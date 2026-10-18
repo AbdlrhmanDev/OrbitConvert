@@ -1,0 +1,20 @@
+name: Feature request
+description: Suggest a new conversion, option or improvement
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What are you trying to do?
+      description: Describe the task, not just the solution.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed behavior
+  - type: textarea
+    id: engines
+    attributes:
+      label: Engine or tool that could do this
+      description: For new formats, which open-source engine supports it, and under what license?

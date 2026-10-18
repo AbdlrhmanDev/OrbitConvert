@@ -23,6 +23,8 @@
     <PackageVersion Include="PDFsharp" Version="6.2.4" />
     <PackageVersion Include="PDFtoImage" Version="5.4.0" />
     <PackageVersion Include="SharpCompress" Version="0.50.5" />
+    <!-- Same version PDFtoImage depends on; referenced directly only to locate its notice files. -->
+    <PackageVersion Include="SkiaSharp.NativeAssets.Win32" Version="4.150.1" />
 
     <!-- Installer (WiX 5 is MS-RL licensed; WiX 6+ adds an Open Source Maintenance Fee EULA) -->
     <PackageVersion Include="WixToolset.UI.wixext" Version="5.0.2" />

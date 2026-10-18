@@ -1,0 +1,74 @@
+name: Release
+
+# Runs when a version tag such as v0.1.0 is pushed. Creates a GitHub release with the MSI, the
+# portable ZIP and SHA256SUMS.txt. Binaries are NOT code-signed; the release notes say so.
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Existing tag to release (e.g. v0.1.0)"
+        required: true
+
+permissions:
+  contents: write
+
+env:
+  DOTNET_CLI_TELEMETRY_OPTOUT: "1"
+  DOTNET_NOLOGO: "1"
+
+jobs:
+  release:
+    runs-on: windows-latest
+    env:
+      TAG: ${{ github.event.inputs.tag || github.ref_name }}
+      ORBITCONVERT_DATA: ${{ github.workspace }}\.ci-data
+      ORBITCONVERT_TOOLS_DIR: ${{ github.workspace }}\.ci-data\tools
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ env.TAG }}
+
+      - uses: actions/setup-dotnet@v6
+        with:
+          global-json-file: global.json
+
+      - name: Check version matches tag
+        shell: pwsh
+        run: |
+          $version = (dotnet msbuild src/OrbitConvert.Core/OrbitConvert.Core.csproj -getProperty:Version).Trim()
+          if ("v$version" -ne $env:TAG) { throw "Tag $env:TAG does not match project version $version (Directory.Build.props)." }
+          "VERSION=$version" >> $env:GITHUB_ENV
+
+      - name: Build and install test tools
+        shell: pwsh
+        run: |
+          dotnet build OrbitConvert.sln -c Release
+          $cli = "src/OrbitConvert.Cli/bin/Release/net10.0/orbitconvert-cli.exe"
+          foreach ($tool in "ffmpeg", "pandoc", "7zip") { & $cli install-tool $tool --yes; if ($LASTEXITCODE) { throw "install-tool $tool failed" } }
+
+      - name: Test and package
+        shell: pwsh
+        run: ./scripts/build-release.ps1 -Version $env:VERSION
+
+      - name: Create GitHub release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          $notes = @"
+          OrbitConvert $env:VERSION
+
+          **Downloads**
+          - ``OrbitConvert-$env:VERSION-win-x64.msi`` — per-user installer, no admin rights needed
+          - ``OrbitConvert-$env:VERSION-win-x64-portable.zip`` — portable build
+          - ``SHA256SUMS.txt`` — verify with ``Get-FileHash <file> -Algorithm SHA256``
+
+          These binaries are **not code-signed**; Windows SmartScreen may warn about an unknown publisher.
+          FFmpeg, Pandoc, LibreOffice, 7-Zip and Ghostscript are not included — see the README.
+          Third-party licenses: NOTICE.md and the licenses folder inside each package.
+          "@
+          $extra = @()
+          if ($env:VERSION -match '^0[.]|-') { $extra += "--prerelease" }
+          gh release create $env:TAG (Get-ChildItem artifacts/release/*).FullName --title "OrbitConvert $env:VERSION" --notes $notes @extra

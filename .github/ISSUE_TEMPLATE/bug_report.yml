@@ -1,0 +1,66 @@
+name: Bug report
+description: Something does not work as described
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting. Please do **not** attach private files. For security problems use the private
+        vulnerability report instead (see SECURITY.md).
+  - type: input
+    id: version
+    attributes:
+      label: OrbitConvert version
+      description: Settings → About, or `orbitconvert-cli --version`
+      placeholder: 0.1.0
+    validations:
+      required: true
+  - type: input
+    id: windows
+    attributes:
+      label: Windows version
+      description: Press Win+R, type `winver`
+      placeholder: Windows 11 24H2 (26100.1234)
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Conversion result
+        - Radial menu
+        - File Explorer integration (context menu, Send to, shortcut, drop zone)
+        - Desktop app
+        - Installer / portable build
+        - Command line
+        - Other
+    validations:
+      required: true
+  - type: input
+    id: conversion
+    attributes:
+      label: Conversion
+      description: Input format → target, and the engine if known
+      placeholder: "MOV → MP4 (FFmpeg)"
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened, and what did you expect?
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+  - type: textarea
+    id: log
+    attributes:
+      label: Log excerpt
+      description: From `%LOCALAPPDATA%\OrbitConvert\logs`. Remove anything you consider private.
+      render: text
+  - type: textarea
+    id: setup
+    attributes:
+      label: Display setup (for radial menu or drop zone issues)
+      placeholder: "Two monitors: 4K at 150 %, 1080p at 100 %"

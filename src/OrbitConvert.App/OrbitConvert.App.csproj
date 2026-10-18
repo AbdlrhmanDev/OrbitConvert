@@ -33,6 +33,24 @@
     <PackageReference Include="Microsoft.Extensions.Configuration.EnvironmentVariables" />
     <PackageReference Include="Microsoft.Extensions.Configuration.Binder" />
   </ItemGroup>
+  <!-- Referenced directly only so their notice files can be located (GeneratePathProperty). -->
+  <ItemGroup>
+    <PackageReference Include="Magick.NET-Q8-AnyCPU" GeneratePathProperty="true" />
+    <PackageReference Include="SkiaSharp.NativeAssets.Win32" GeneratePathProperty="true" />
+  </ItemGroup>
+
+  <!-- License and notice files required by bundled third-party components; every build ships them in .\licenses. -->
+  <PropertyGroup>
+    <DotNetRuntimeNotice>$(NuGetPackageRoot)microsoft.netcore.app.runtime.win-x64\$(BundledNETCoreAppPackageVersion)\THIRD-PARTY-NOTICES.TXT</DotNetRuntimeNotice>
+  </PropertyGroup>
+  <ItemGroup>
+    <None Include="$(PkgMagick_NET-Q8-AnyCPU)\Notice.txt" Link="licenses\Magick.NET-ImageMagick-and-delegate-libraries.txt" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="$(PkgSkiaSharp_NativeAssets_Win32)\LICENSE.txt" Link="licenses\SkiaSharp-LICENSE.txt" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="$(PkgSkiaSharp_NativeAssets_Win32)\THIRD-PARTY-NOTICES.txt" Link="licenses\SkiaSharp-THIRD-PARTY-NOTICES.txt" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\..\licenses\*.txt" Link="licenses\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="$(DotNetRuntimeNotice)" Condition="Exists('$(DotNetRuntimeNotice)')" Link="licenses\dotnet-runtime-THIRD-PARTY-NOTICES.txt" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
   <ItemGroup>
     <Resource Include="Assets\logo.png" />
     <Resource Include="Assets\logo-256.png" />
