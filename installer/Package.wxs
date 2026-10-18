@@ -1,0 +1,96 @@
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs"
+     xmlns:ui="http://wixtoolset.org/schemas/v4/wxs/ui">
+  <Package Name="OrbitConvert"
+           Manufacturer="OrbitConvert contributors"
+           Version="$(var.ProductVersion)"
+           UpgradeCode="7C9E2C1A-4B8D-4F3E-9A61-0D2B5E8F3C47"
+           Scope="perUserOrMachine"
+           Compressed="yes"
+           Language="1033">
+    <SummaryInformation Description="OrbitConvert - private, local file conversion" />
+    <MajorUpgrade DowngradeErrorMessage="A newer version of OrbitConvert is already installed." />
+    <MediaTemplate EmbedCab="yes" />
+
+    <Icon Id="AppIcon" SourceFile="$(var.RepoRoot)\assets\icons\orbitconvert.ico" />
+    <Property Id="ARPPRODUCTICON" Value="AppIcon" />
+    <Property Id="ARPURLINFOABOUT" Value="https://github.com/AbdlrhmanDev/OrbitConvert" />
+    <Property Id="ARPHELPLINK" Value="https://github.com/AbdlrhmanDev/OrbitConvert/issues" />
+    <WixVariable Id="WixUILicenseRtf" Value="$(var.RepoRoot)\installer\License.rtf" />
+
+    <!-- Dual-purpose package that installs per-user by default (ALLUSERS=2, MSIINSTALLPERUSER=1), so Windows
+         Installer redirects this to %LOCALAPPDATA%\Programs and no administrator rights are needed. -->
+    <StandardDirectory Id="ProgramFiles6432Folder">
+      <Directory Id="INSTALLFOLDER" Name="OrbitConvert" />
+    </StandardDirectory>
+    <StandardDirectory Id="ProgramMenuFolder" />
+    <StandardDirectory Id="DesktopFolder" />
+    <StandardDirectory Id="SendToFolder" />
+
+    <Feature Id="Main" Title="OrbitConvert" Description="The OrbitConvert application and Start menu shortcut."
+             AllowAbsent="no" Display="expand">
+      <ComponentGroupRef Id="ApplicationFiles" />
+      <ComponentRef Id="StartMenuShortcut" />
+
+      <Feature Id="ExplorerIntegration" Title="File Explorer integration"
+               Description="Adds &quot;Convert with OrbitConvert&quot; to the file context menu (under &quot;Show more options&quot; on Windows 11) and to the Send to menu.">
+        <ComponentRef Id="ContextMenuVerb" />
+        <ComponentRef Id="SendToShortcut" />
+      </Feature>
+
+      <Feature Id="StartAtSignIn" Title="Start in the background at sign-in"
+               Description="Keeps the keyboard shortcut and drop zone available. You can change this later by removing the feature.">
+        <ComponentRef Id="RunAtSignIn" />
+      </Feature>
+
+      <!-- Level 2 is above the default install level, so the desktop shortcut is off unless chosen. -->
+      <Feature Id="DesktopShortcutFeature" Title="Desktop shortcut" Level="2">
+        <ComponentRef Id="DesktopShortcut" />
+      </Feature>
+    </Feature>
+
+    <ui:WixUI Id="WixUI_FeatureTree" />
+  </Package>
+
+  <Fragment>
+    <ComponentGroup Id="ApplicationFiles" Directory="INSTALLFOLDER">
+      <Files Include="$(var.PublishDir)\**" />
+    </ComponentGroup>
+  </Fragment>
+
+  <Fragment>
+    <!-- Per-user shortcuts and registry entries use an HKCU key path, as Windows Installer requires. -->
+    <Component Id="StartMenuShortcut" Directory="ProgramMenuFolder">
+      <Shortcut Id="StartMenuShortcutLink" Name="OrbitConvert" Description="Private, local file conversion"
+                Target="[INSTALLFOLDER]OrbitConvert.exe" WorkingDirectory="INSTALLFOLDER" Icon="AppIcon" />
+      <RegistryValue Root="HKCU" Key="Software\OrbitConvert\Installer" Name="StartMenuShortcut" Type="integer" Value="1" KeyPath="yes" />
+    </Component>
+
+    <Component Id="DesktopShortcut" Directory="DesktopFolder">
+      <Shortcut Id="DesktopShortcutLink" Name="OrbitConvert" Description="Private, local file conversion"
+                Target="[INSTALLFOLDER]OrbitConvert.exe" WorkingDirectory="INSTALLFOLDER" Icon="AppIcon" />
+      <RegistryValue Root="HKCU" Key="Software\OrbitConvert\Installer" Name="DesktopShortcut" Type="integer" Value="1" KeyPath="yes" />
+    </Component>
+
+    <Component Id="SendToShortcut" Directory="SendToFolder">
+      <Shortcut Id="SendToShortcutLink" Name="OrbitConvert" Description="Convert with OrbitConvert"
+                Target="[INSTALLFOLDER]OrbitConvert.exe" Arguments="--radial" WorkingDirectory="INSTALLFOLDER" Icon="AppIcon" />
+      <RegistryValue Root="HKCU" Key="Software\OrbitConvert\Installer" Name="SendToShortcut" Type="integer" Value="1" KeyPath="yes" />
+    </Component>
+
+    <!-- Same keys that OrbitConvert's own Settings page writes (see ShellRegistration.cs). -->
+    <Component Id="ContextMenuVerb" Directory="INSTALLFOLDER">
+      <RegistryKey Root="HKCU" Key="Software\Classes\*\shell\OrbitConvert">
+        <RegistryValue Type="string" Value="Convert with OrbitConvert" KeyPath="yes" />
+        <RegistryValue Name="MUIVerb" Type="string" Value="Convert with OrbitConvert" />
+        <RegistryValue Name="Icon" Type="string" Value="&quot;[INSTALLFOLDER]OrbitConvert.exe&quot;,0" />
+        <RegistryValue Name="MultiSelectModel" Type="string" Value="Player" />
+        <RegistryValue Key="command" Type="string" Value="&quot;[INSTALLFOLDER]OrbitConvert.exe&quot; --radial &quot;%1&quot;" />
+      </RegistryKey>
+    </Component>
+
+    <Component Id="RunAtSignIn" Directory="INSTALLFOLDER">
+      <RegistryValue Root="HKCU" Key="Software\Microsoft\Windows\CurrentVersion\Run" Name="OrbitConvert" Type="string"
+                     Value="&quot;[INSTALLFOLDER]OrbitConvert.exe&quot; --background" KeyPath="yes" />
+    </Component>
+  </Fragment>
+</Wix>

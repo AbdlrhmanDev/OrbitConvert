@@ -1,0 +1,21 @@
+<Project Sdk="WixToolset.Sdk/5.0.2">
+  <!--
+    Builds a per-user Windows Installer package (no administrator rights needed).
+    Usage: dotnet build installer/OrbitConvert.Installer.wixproj -c Release -p:PublishDir=<folder from dotnet publish>
+    scripts/build-release.ps1 runs publish and this project together.
+  -->
+  <PropertyGroup>
+    <OutputName>OrbitConvert-$(Version)-win-x64</OutputName>
+    <Platform>x64</Platform>
+    <InstallerPlatform>x64</InstallerPlatform>
+    <PublishDir Condition="'$(PublishDir)' == ''">$(MSBuildThisFileDirectory)..\artifacts\publish\OrbitConvert</PublishDir>
+    <DefineConstants>PublishDir=$(PublishDir);ProductVersion=$(Version);RepoRoot=$(MSBuildThisFileDirectory)..</DefineConstants>
+    <!-- ICE91 warns that per-user folders are not copied for per-machine installs; this package is per-user only. -->
+    <SuppressIces>ICE91</SuppressIces>
+    <!-- ICE validation needs the Windows Installer service, which is unavailable on some CI images. -->
+    <SuppressValidation Condition="'$(CI)' == 'true'">true</SuppressValidation>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="WixToolset.UI.wixext" />
+  </ItemGroup>
+</Project>
