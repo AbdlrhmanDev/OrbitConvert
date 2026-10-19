@@ -56,6 +56,7 @@ public sealed class ConversionBatch : INotifyPropertyChanged
     }
 
     public int SucceededCount => Jobs.Count(j => j.Status == JobStatus.Succeeded);
+    public int SkippedCount => Jobs.Count(j => j.Status == JobStatus.Skipped);
     public int FailedCount => Jobs.Count(j => j.Status is JobStatus.Failed or JobStatus.Canceled);
     public IEnumerable<string> Outputs => Jobs.SelectMany(j => j.Outputs);
     public string? FirstError => Jobs.Select(j => j.Error).FirstOrDefault(e => e is not null && Jobs.Any(x => x.Status == JobStatus.Failed));
@@ -130,12 +131,32 @@ public sealed class ConversionCoordinator
         return Enqueue(plans, skipped.Count, plans.FirstOrDefault()?.Route.Label ?? targetKey);
     }
 
+    public IReadOnlyList<Core.Presets.ConversionPreset> Presets => _settings.Current.Presets;
+
+    /// <summary>Runs a saved preset (its target and options) on the inputs.</summary>
+    public ConversionBatch StartPreset(IReadOnlyList<InputFile> inputs, string presetId, OutputSettings? output = null, bool notify = true)
+    {
+        var preset = _settings.Current.Presets.FirstOrDefault(p => p.Id == presetId)
+            ?? throw new ConversionException("That preset no longer exists.");
+        var settings = _settings.Current;
+        var plans = _registry.CreatePlans(inputs, preset.TargetKey, preset.Options, output ?? settings.ToOutputSettings(), out var skipped);
+        return Enqueue(plans, skipped.Count, preset.Name, notify);
+    }
+
+    /// <summary>True when the preset's target can run, with defaults, on every input.</summary>
+    public bool PresetApplies(Core.Presets.ConversionPreset preset, IReadOnlyList<InputFile> inputs, IReadOnlyList<ConversionTarget> targets) =>
+        preset.IsFor(inputs.Select(i => i.Format?.Category))
+        && targets.Any(t => t.IsAvailable && string.Equals(t.Key, preset.TargetKey, StringComparison.OrdinalIgnoreCase));
+
     /// <summary>Starts pre-built plans, e.g. when each file has its own options.</summary>
-    public ConversionBatch Enqueue(IReadOnlyList<ConversionPlan> plans, int skipped, string label)
+    public ConversionBatch Enqueue(IReadOnlyList<ConversionPlan> plans, int skipped, string label, bool notify = true)
     {
         var jobs = _queue.Enqueue(plans);
         var batch = new ConversionBatch(jobs, skipped, label);
-        batch.Completed += (_, _) => Ui.Post(() => Notify(batch));
+        if (notify)
+        {
+            batch.Completed += (_, _) => Ui.Post(() => Notify(batch));
+        }
         _logger.LogInformation("Queued {Count} job(s) for {Target}", jobs.Count, label);
         return batch;
     }

@@ -3,7 +3,8 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
     <UserControl.Resources>
         <Style x:Key="SectionCard" TargetType="Border" BasedOn="{StaticResource Card}">
-            <Setter Property="Margin" Value="0,0,0,14" />
+            <Setter Property="Margin" Value="0,0,0,16" />
+            <Setter Property="Padding" Value="22" />
         </Style>
         <Style x:Key="Row" TargetType="DockPanel">
             <Setter Property="Margin" Value="0,6" />
@@ -16,8 +17,9 @@
     </UserControl.Resources>
 
     <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
-        <StackPanel Margin="40,32,40,32" MaxWidth="860">
-            <TextBlock Text="Settings" Style="{StaticResource Text.Display}" Margin="0,0,0,20" />
+        <StackPanel Margin="32" MaxWidth="880" HorizontalAlignment="Left">
+            <TextBlock Text="Settings" Style="{StaticResource Text.Display}" Margin="0,0,0,4" />
+            <TextBlock Text="Files never leave this PC. The app goes online only when you download a tool or turn on update checks." Style="{StaticResource Text.Secondary}" FontSize="14" Foreground="{DynamicResource Brush.TextTertiary}" Margin="0,0,0,22" />
 
             <!-- Output -->
             <Border Style="{StaticResource SectionCard}">
@@ -96,6 +98,9 @@
                     <TextBlock Text="Behavior" Style="{StaticResource Text.Subtitle}" Margin="0,0,0,8" />
                     <CheckBox Content="Show a notification when conversions finish" IsChecked="{Binding NotificationsEnabled}" Margin="0,0,0,6" />
                     <CheckBox Content="Close the radial menu automatically after success" IsChecked="{Binding CloseRadialAfterSuccess}" Margin="0,0,0,6" />
+                    <CheckBox Content="Reduce motion (the Orbit Menu fades instead of scaling)" IsChecked="{Binding ReduceMotion}" Margin="0,0,0,6" />
+                    <CheckBox Content="Start with Windows, in the notification area" IsChecked="{Binding StartWithWindows}" Margin="0,0,0,6" />
+                    <TextBlock Text="Keeps the shortcut, drop target and watch folders ready after you sign in." Style="{StaticResource Hint}" Margin="26,0,0,6" />
                     <CheckBox Content="Keep running in the notification area when the window is closed" IsChecked="{Binding RunInBackgroundWhenClosed}" Margin="0,0,0,6" />
                     <TextBlock Text="Needed for the shortcut, drop zone and fast context-menu conversions." Style="{StaticResource Hint}" Margin="26,0,0,6" />
                     <DockPanel Style="{StaticResource Row}">

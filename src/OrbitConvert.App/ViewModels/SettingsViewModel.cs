@@ -280,6 +280,34 @@ public sealed partial class SettingsViewModel : ObservableObject
 
     private static string ExecutablePath => Environment.ProcessPath ?? Path.Combine(AppContext.BaseDirectory, "OrbitConvert.exe");
 
+    public bool ReduceMotion { get => S.ReduceMotion; set => Update(s => s.ReduceMotion = value, nameof(ReduceMotion)); }
+
+    [ObservableProperty]
+    private bool _startWithWindows;
+
+    partial void OnStartWithWindowsChanged(bool value)
+    {
+        if (_refreshing)
+        {
+            return;
+        }
+        try
+        {
+            if (value)
+            {
+                StartupRegistration.Enable(ExecutablePath);
+            }
+            else
+            {
+                StartupRegistration.Disable();
+            }
+        }
+        catch (Exception ex) when (ex is UnauthorizedAccessException or IOException or System.Security.SecurityException)
+        {
+            ShellMessage = "Could not change Start with Windows: " + ex.Message;
+        }
+    }
+
     // Notifications & behavior
     public bool NotificationsEnabled { get => S.NotificationsEnabled; set => Update(s => s.NotificationsEnabled = value, nameof(NotificationsEnabled)); }
     public bool CloseRadialAfterSuccess { get => S.CloseRadialAfterSuccess; set => Update(s => s.CloseRadialAfterSuccess = value, nameof(CloseRadialAfterSuccess)); }
@@ -405,6 +433,7 @@ public sealed partial class SettingsViewModel : ObservableObject
             }
             ContextMenuEnabled = ShellRegistration.IsContextMenuRegistered(ExecutablePath);
             SendToEnabled = ShellRegistration.IsSendToRegistered();
+            StartWithWindows = StartupRegistration.IsEnabled(ExecutablePath);
             OnPropertyChanged(nameof(HotkeyStatus));
         }
         finally

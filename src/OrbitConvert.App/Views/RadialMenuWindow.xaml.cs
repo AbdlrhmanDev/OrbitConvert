@@ -1,4 +1,3 @@
-using System.ComponentModel;
 using System.Windows;
 using System.Windows.Input;
 using System.Windows.Interop;
@@ -15,15 +14,17 @@ public partial class RadialMenuWindow : Window
     private bool _closing;
     private bool _buttonWasDown = true;
 
-    public RadialMenuWindow(RadialMenuViewModel viewModel, PixelPoint anchor)
+    private readonly bool _reduceMotion;
+
+    public RadialMenuWindow(RadialMenuViewModel viewModel, PixelPoint anchor, bool reduceMotion = false)
     {
         InitializeComponent();
         ViewModel = viewModel;
         DataContext = viewModel;
         _anchor = anchor;
+        _reduceMotion = reduceMotion;
 
         viewModel.CloseRequested += (_, _) => FadeOutAndClose();
-        viewModel.PropertyChanged += OnViewModelChanged;
 
         SourceInitialized += (_, _) => PlaceAtAnchor();
         DpiChanged += (_, _) => Dispatcher.BeginInvoke(PlaceAtAnchor);
@@ -31,6 +32,9 @@ public partial class RadialMenuWindow : Window
         Loaded += (_, _) => AnimateIn();
         Deactivated += (_, _) => OnDeactivated();
         PreviewKeyDown += OnPreviewKeyDown;
+        DragEnter += OnFileDrag;
+        DragOver += OnFileDrag;
+        Drop += OnFileDrop;
         _outsideClickWatch.Tick += (_, _) => WatchOutsideClicks();
         Closed += (_, _) => _outsideClickWatch.Stop();
     }
@@ -51,13 +55,21 @@ public partial class RadialMenuWindow : Window
         ScreenGeometry.MoveWindow(hwnd, topLeft);
     }
 
+    /// <summary>Identity motion: open 140 ms scaling 0.92 → 1 with a fast-out curve; reduced motion fades only.</summary>
     private void AnimateIn()
     {
-        var ease = new CubicEase { EasingMode = EasingMode.EaseOut };
-        var duration = TimeSpan.FromMilliseconds(170);
+        var ease = new BezierEase(0.2, 0.9, 0.1, 1);
+        var duration = TimeSpan.FromMilliseconds(140);
         BeginAnimation(OpacityProperty, new DoubleAnimation(0, 1, duration) { EasingFunction = ease });
-        RootScale.BeginAnimation(System.Windows.Media.ScaleTransform.ScaleXProperty, new DoubleAnimation(0.86, 1, duration) { EasingFunction = ease });
-        RootScale.BeginAnimation(System.Windows.Media.ScaleTransform.ScaleYProperty, new DoubleAnimation(0.86, 1, duration) { EasingFunction = ease });
+        if (_reduceMotion)
+        {
+            RootScale.ScaleX = RootScale.ScaleY = 1;
+        }
+        else
+        {
+            RootScale.BeginAnimation(System.Windows.Media.ScaleTransform.ScaleXProperty, new DoubleAnimation(0.92, 1, duration) { EasingFunction = ease });
+            RootScale.BeginAnimation(System.Windows.Media.ScaleTransform.ScaleYProperty, new DoubleAnimation(0.92, 1, duration) { EasingFunction = ease });
+        }
         Activate();
         Focus();
         _outsideClickWatch.Start();
@@ -99,37 +111,66 @@ public partial class RadialMenuWindow : Window
             return;
         }
         _closing = true;
-        var fade = new DoubleAnimation(Opacity, 0, TimeSpan.FromMilliseconds(120));
+        var fade = new DoubleAnimation(Opacity, 0, TimeSpan.FromMilliseconds(100));
         fade.Completed += (_, _) => Close();
         BeginAnimation(OpacityProperty, fade);
-        RootScale.BeginAnimation(System.Windows.Media.ScaleTransform.ScaleXProperty, new DoubleAnimation(1, 0.92, TimeSpan.FromMilliseconds(120)));
-        RootScale.BeginAnimation(System.Windows.Media.ScaleTransform.ScaleYProperty, new DoubleAnimation(1, 0.92, TimeSpan.FromMilliseconds(120)));
     }
 
     private void OnDeactivated()
     {
         // Clicking elsewhere dismisses the menu. A running conversion continues in the queue and
         // finishes with a notification.
-        if (!_closing && IsLoaded)
+        if (!_closing && IsLoaded && !ScreenGeometry.IsLeftButtonDown())
         {
             FadeOutAndClose();
         }
     }
 
-    private void OnViewModelChanged(object? sender, PropertyChangedEventArgs e)
+    private static bool HasFiles(DragEventArgs e) => e.Data.GetDataPresent(DataFormats.FileDrop);
+
+    private void OnFileDrag(object sender, DragEventArgs e)
     {
-        if (e.PropertyName == nameof(RadialMenuViewModel.Progress))
+        if (!ViewModel.IsChoosing || !HasFiles(e))
         {
-            var p = ViewModel.Progress;
-            PercentText.Text = p < 0 ? "…" : $"{p * 100:0}%";
+            e.Effects = DragDropEffects.None;
+            e.Handled = true;
+            return;
         }
+        var item = Wheel.SelectAt(e.GetPosition(Wheel));
+        e.Effects = item is null ? DragDropEffects.None : DragDropEffects.Copy;
+        e.Handled = true;
     }
 
-    private void OnItemMouseEnter(object sender, MouseEventArgs e)
+    private void OnFileDrop(object sender, DragEventArgs e)
     {
-        if (sender is FrameworkElement { DataContext: RadialItemViewModel item })
+        if (!ViewModel.IsChoosing || !HasFiles(e)
+            || e.Data.GetData(DataFormats.FileDrop) is not string[] dropped
+            || !SameFiles(dropped, ViewModel.Paths))
         {
-            ViewModel.SelectItem(item);
+            e.Effects = DragDropEffects.None;
+            e.Handled = true;
+            return;
+        }
+
+        var item = Wheel.SelectAt(e.GetPosition(Wheel));
+        // The radial menu was created for this selection by a supported activation path. The OLE
+        // payload is used only to confirm this is a real file drop; conversion always uses the
+        // already signature-validated ViewModel inputs.
+        e.Effects = item is not null && Wheel.ActivateSelected() ? DragDropEffects.Copy : DragDropEffects.None;
+        e.Handled = true;
+    }
+
+    private static bool SameFiles(IEnumerable<string> dropped, IReadOnlyList<string> expected)
+    {
+        try
+        {
+            var actual = dropped.Select(Path.GetFullPath).ToHashSet(StringComparer.OrdinalIgnoreCase);
+            var planned = expected.Select(Path.GetFullPath).ToHashSet(StringComparer.OrdinalIgnoreCase);
+            return actual.SetEquals(planned);
+        }
+        catch (Exception ex) when (ex is ArgumentException or NotSupportedException or PathTooLongException)
+        {
+            return false;
         }
     }
 
@@ -150,7 +191,7 @@ public partial class RadialMenuWindow : Window
                 ViewModel.MoveSelection(Keyboard.Modifiers.HasFlag(ModifierKeys.Shift) ? -1 : 1);
                 break;
             case Key.Enter or Key.Space:
-                if (ViewModel.IsChoosing)
+                if (ViewModel.IsChoosing && ViewModel.Selected is not null)
                 {
                     ViewModel.Activate(null);
                 }
@@ -171,4 +212,34 @@ public partial class RadialMenuWindow : Window
         }
         e.Handled = true;
     }
+}
+
+/// <summary>A cubic-bezier easing curve, so motion can match the identity's CSS timing functions.</summary>
+internal sealed class BezierEase : EasingFunctionBase
+{
+    private readonly double x1, y1, x2, y2;
+
+    public BezierEase(double x1, double y1, double x2, double y2)
+    {
+        (this.x1, this.y1, this.x2, this.y2) = (x1, y1, x2, y2);
+        // EaseIn makes WPF use EaseInCore directly; the curve itself encodes the ease-out shape.
+        EasingMode = EasingMode.EaseIn;
+    }
+
+    protected override double EaseInCore(double t)
+    {
+        // Solve x(u) = t for the curve parameter u by bisection, then return y(u).
+        double lo = 0, hi = 1, u = t;
+        for (var i = 0; i < 24; i++)
+        {
+            u = (lo + hi) / 2;
+            if (Bezier(u, x1, x2) < t) lo = u; else hi = u;
+        }
+        return Bezier(u, y1, y2);
+    }
+
+    private static double Bezier(double u, double p1, double p2) =>
+        3 * (1 - u) * (1 - u) * u * p1 + 3 * (1 - u) * u * u * p2 + u * u * u;
+
+    protected override Freezable CreateInstanceCore() => new BezierEase(x1, y1, x2, y2);
 }

@@ -18,6 +18,13 @@ registry discovers every registered converter automatically.
 - Animation is kept between GIF and WebP; multi-page TIFF is kept for TIFF and PDF; otherwise the first
   frame (largest frame for ICO) is used. ICO output embeds standard sizes up to the source size.
 
+- Same-format actions (`ImageActions`): **Shrink** (`image-shrink`; JPG/WebP/AVIF re-encoded at quality
+  72, PNG recompressed losslessly; nothing is saved if the result is not smaller) and **Strip metadata**
+  (`image-strip`; JPG and PNG segments/chunks are removed byte-for-byte without re-encoding, except a
+  JPEG whose EXIF rotates it, which is re-encoded at quality 95 so it stays upright).
+- Editors (`ImageEditor`): crop to a rectangle (`-crop` suffix) and add a background (`-bg.png`: linear
+  135° gradient, padding, rounded corners via an alpha mask, optional shadow, fixed canvas size).
+
 ### FFmpeg (`FfmpegConverter`) — external
 
 - Video → MP4, MKV, MOV, AVI, WebM, GIF, and “Compress” (same container, smaller, fails honestly if

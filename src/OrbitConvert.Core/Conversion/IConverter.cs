@@ -14,6 +14,12 @@ public interface IConverter
     RouteAvailability GetAvailability(ConversionRoute route);
 
     /// <summary>
+    /// Validates user-supplied options before a job is added to the queue. Converters should keep
+    /// the same checks in <see cref="ExecuteAsync"/> as a defense against non-UI callers.
+    /// </summary>
+    void ValidateOptions(ConversionRoute route, IReadOnlyList<InputFile> inputs, ConversionOptions options) { }
+
+    /// <summary>
     /// Performs the conversion. Implementations must write every output inside
     /// <see cref="ConversionContext.WorkDirectory"/> and return the paths they produced;
     /// the engine validates and moves them to the final location.

@@ -45,19 +45,48 @@ public sealed class FileLoggerProvider : ILoggerProvider
 
     private void WriteLoop()
     {
-        foreach (var line in _queue.GetConsumingEnumerable())
+        StreamWriter? writer = null;
+        DateOnly openDay = default;
+        try
         {
-            try
+            while (!_queue.IsCompleted)
             {
-                var file = Path.Combine(_directory, $"orbitconvert-{DateTime.Now:yyyyMMdd}.log");
-                File.AppendAllText(file, line, Encoding.UTF8);
+                if (!_queue.TryTake(out var line, millisecondsTimeout: 250))
+                {
+                    writer?.Flush();
+                    continue;
+                }
+
+                try
+                {
+                    var today = DateOnly.FromDateTime(DateTime.Now);
+                    if (writer is null || today != openDay)
+                    {
+                        writer?.Dispose();
+                        var file = Path.Combine(_directory, $"orbitconvert-{today:yyyyMMdd}.log");
+                        writer = new StreamWriter(new FileStream(file, FileMode.Append, FileAccess.Write, FileShare.Read,
+                            bufferSize: 64 * 1024, FileOptions.SequentialScan), new UTF8Encoding(false), bufferSize: 64 * 1024);
+                        openDay = today;
+                    }
+
+                    writer.Write(line);
+                    // Drain a burst with the same open file handle instead of opening the log once per message.
+                    while (_queue.TryTake(out line))
+                    {
+                        writer.Write(line);
+                    }
+                    writer.Flush();
+                }
+                catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+                {
+                    writer?.Dispose();
+                    writer = null;
+                }
             }
-            catch (IOException)
-            {
-            }
-            catch (UnauthorizedAccessException)
-            {
-            }
+        }
+        finally
+        {
+            writer?.Dispose();
         }
     }
 

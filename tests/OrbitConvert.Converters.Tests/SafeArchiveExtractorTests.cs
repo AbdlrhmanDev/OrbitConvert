@@ -108,6 +108,17 @@ public class SafeArchiveExtractorTests : IDisposable
     }
 
     [Fact]
+    public void Archive_test_obeys_resource_limits_too()
+    {
+        var archive = Zip("test-bomb.zip", ("zeros.bin", new byte[2_000_000]));
+
+        var result = SafeArchiveExtractor.Test(archive, limits: new ExtractionLimits { MaxTotalBytes = 1_000_000 });
+
+        Assert.False(result.IsValid);
+        Assert.Contains(result.Problems, p => p.Contains("size limit", StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Fact]
     public void Detects_corrupted_data_through_crc()
     {
         var content = Text(new string('A', 5000) + "UNIQUE-MARKER" + new string('B', 5000));

@@ -67,13 +67,14 @@ public sealed class CategoryToBrushConverter : IValueConverter
 {
     private static readonly Dictionary<string, SolidColorBrush> Brushes = new(StringComparer.OrdinalIgnoreCase)
     {
-        ["Image"] = Freeze(0x1F, 0xA0, 0x6E),
-        ["Video"] = Freeze(0xE8, 0x59, 0x0C),
-        ["Audio"] = Freeze(0x79, 0x50, 0xF2),
-        ["Document"] = Freeze(0x1C, 0x7E, 0xD6),
-        ["Pdf"] = Freeze(0xE0, 0x3E, 0x75),
-        ["Archive"] = Freeze(0xC9, 0x8B, 0x00),
-        ["Other"] = Freeze(0x6C, 0x75, 0x89),
+        // Identity v1.0 category hues, used only on format glyphs.
+        ["Image"] = Freeze(0x4F, 0xD1, 0xE8),
+        ["Video"] = Freeze(0xFF, 0x7A, 0xC6),
+        ["Audio"] = Freeze(0xB6, 0x8C, 0xFF),
+        ["Document"] = Freeze(0x6E, 0xA8, 0xFF),
+        ["Pdf"] = Freeze(0xFF, 0x6B, 0x5E),
+        ["Archive"] = Freeze(0xE8, 0xD3, 0x6A),
+        ["Other"] = Freeze(0x8A, 0x8D, 0x98),
     };
 
     public static SolidColorBrush For(string? category) =>
@@ -176,21 +177,75 @@ public sealed class IsNegativeConverter : IValueConverter
 
 public sealed class RelativeTimeConverter : IValueConverter
 {
-    public object Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
+    public object Convert(object? value, Type targetType, object? parameter, CultureInfo culture) =>
+        value is DateTimeOffset time ? Format(time, culture) : "";
+
+    public static string Format(DateTimeOffset time, CultureInfo? culture = null)
     {
-        if (value is not DateTimeOffset time)
-        {
-            return "";
-        }
         var age = DateTimeOffset.Now - time;
         return age.TotalMinutes switch
         {
             < 1 => "just now",
             < 60 => $"{(int)age.TotalMinutes} min ago",
             < 60 * 24 => $"{(int)age.TotalHours} h ago",
-            _ => time.LocalDateTime.ToString("g", culture),
+            < 60 * 48 => "yesterday",
+            _ => time.LocalDateTime.ToString("g", culture ?? CultureInfo.CurrentCulture),
         };
     }
 
     public object ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture) => Binding.DoNothing;
+}
+
+/// <summary>
+/// (Status, Progress, Error, Note) → the status line of a queue row: "62%" while running,
+/// the error message when failed, otherwise the plain status.
+/// </summary>
+public sealed class JobStatusLineConverter : IMultiValueConverter
+{
+    public object Convert(object?[] values, Type targetType, object? parameter, CultureInfo culture)
+    {
+        var status = values.Length > 0 && values[0] is JobStatus s ? s : JobStatus.Queued;
+        var progress = values.Length > 1 && values[1] is double p ? p : -1;
+        var error = values.Length > 2 ? values[2] as string : null;
+        var note = values.Length > 3 ? values[3] as string : null;
+        return status switch
+        {
+            JobStatus.Running => progress >= 0 ? $"{progress * 100:0}%" : "Converting…",
+            JobStatus.Failed => error ?? "Failed",
+            JobStatus.Succeeded => string.IsNullOrEmpty(note) ? "Done" : "Done · " + note,
+            JobStatus.Skipped => string.IsNullOrEmpty(note) ? "Skipped" : "Skipped · " + note,
+            JobStatus.Paused => "Paused",
+            JobStatus.Canceled => "Canceled",
+            _ => "Queued",
+        };
+    }
+
+    public object[] ConvertBack(object? value, Type[] targetTypes, object? parameter, CultureInfo culture) => [];
+}
+
+/// <summary>Progress-bar fill per status: lime while working, muted when done, red when failed.</summary>
+public sealed class JobBarBrushConverter : IValueConverter
+{
+    public object? Convert(object? value, Type targetType, object? parameter, CultureInfo culture) =>
+        Application.Current.TryFindResource(value switch
+        {
+            JobStatus.Failed => "Brush.Danger",
+            JobStatus.Succeeded or JobStatus.Skipped or JobStatus.Canceled => "Brush.BorderStrong",
+            _ => "Brush.Accent",
+        });
+
+    public object ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture) => Binding.DoNothing;
+}
+
+/// <summary>Finished jobs show a full bar; queued ones an empty one.</summary>
+public sealed class JobBarValueConverter : IMultiValueConverter
+{
+    public object Convert(object?[] values, Type targetType, object? parameter, CultureInfo culture)
+    {
+        var status = values.Length > 0 && values[0] is JobStatus s ? s : JobStatus.Queued;
+        var progress = values.Length > 1 && values[1] is double p ? p : -1;
+        return status is JobStatus.Succeeded or JobStatus.Failed or JobStatus.Skipped ? 100.0 : progress > 0 ? progress * 100 : 0.0;
+    }
+
+    public object[] ConvertBack(object? value, Type[] targetTypes, object? parameter, CultureInfo culture) => [];
 }

@@ -3,75 +3,202 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:vm="clr-namespace:OrbitConvert.App.ViewModels"
         xmlns:v="clr-namespace:OrbitConvert.App.Views"
-        Title="OrbitConvert" Width="1180" Height="780" MinWidth="880" MinHeight="600"
+        Title="OrbitConvert" Width="1240" Height="820" MinWidth="900" MinHeight="600"
         WindowStartupLocation="CenterScreen" Icon="/OrbitConvert;component/Assets/logo.png"
-        Background="{DynamicResource Brush.Background}"
+        Background="{DynamicResource Brush.Sidebar}"
         FontFamily="{StaticResource UiFont}" AllowDrop="True">
+    <!-- Custom title bar: the client area extends into the caption. GlassFrameThickness keeps
+         the DWM shadow and Windows 11 rounded corners. -->
+    <WindowChrome.WindowChrome>
+        <WindowChrome CaptionHeight="44" ResizeBorderThickness="6" GlassFrameThickness="0,0,0,1"
+                      UseAeroCaptionButtons="False" CornerRadius="0" />
+    </WindowChrome.WindowChrome>
+    <Window.InputBindings>
+        <KeyBinding Key="K" Modifiers="Control" Command="{Binding OpenSearchCommand}" />
+    </Window.InputBindings>
     <Window.Resources>
         <DataTemplate DataType="{x:Type vm:HomeViewModel}"><v:HomeView /></DataTemplate>
         <DataTemplate DataType="{x:Type vm:ConvertViewModel}"><v:ConvertView /></DataTemplate>
+        <DataTemplate DataType="{x:Type vm:BatchViewModel}"><v:BatchView /></DataTemplate>
         <DataTemplate DataType="{x:Type vm:ToolsViewModel}"><v:ToolsView /></DataTemplate>
+        <DataTemplate DataType="{x:Type vm:AutomationViewModel}"><v:AutomationView /></DataTemplate>
+        <DataTemplate DataType="{x:Type vm:PresetsViewModel}"><v:PresetsView /></DataTemplate>
         <DataTemplate DataType="{x:Type vm:HistoryViewModel}"><v:HistoryView /></DataTemplate>
         <DataTemplate DataType="{x:Type vm:SettingsViewModel}"><v:SettingsView /></DataTemplate>
     </Window.Resources>
 
-    <Grid>
-        <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="232" />
-            <ColumnDefinition Width="*" />
-        </Grid.ColumnDefinitions>
+    <Grid x:Name="Root">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="44" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
 
-        <!-- Sidebar -->
-        <Border Background="{DynamicResource Brush.Sidebar}" BorderBrush="{DynamicResource Brush.Border}" BorderThickness="0,0,1,0">
-            <DockPanel Margin="14,18,14,14">
-                <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="8,0,0,26">
-                    <Image Source="/OrbitConvert;component/Assets/logo.png" Width="30" Height="30" RenderOptions.BitmapScalingMode="HighQuality" />
-                    <StackPanel Margin="10,0,0,0" VerticalAlignment="Center">
-                        <TextBlock Text="OrbitConvert" FontFamily="{StaticResource DisplayFont}" FontSize="17" FontWeight="SemiBold"
-                                   Foreground="{DynamicResource Brush.Text}" />
-                        <TextBlock Text="Private, local file conversion" Style="{StaticResource Text.Caption}" FontSize="11" />
-                    </StackPanel>
-                </StackPanel>
+        <!-- Title bar -->
+        <Grid Background="{DynamicResource Brush.Sidebar}">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="232" />
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <StackPanel Orientation="Horizontal" Margin="16,0,0,0" VerticalAlignment="Center">
+                <Viewbox Width="16" Height="16">
+                    <Canvas Width="100" Height="100">
+                        <Path Data="{StaticResource Geo.MarkArcBare}" Stroke="{DynamicResource Brush.AccentText}" StrokeThickness="20" />
+                    </Canvas>
+                </Viewbox>
+                <TextBlock Text="OrbitConvert" FontSize="13" Margin="10,0,0,0" VerticalAlignment="Center" Foreground="{DynamicResource Brush.Text}" />
+            </StackPanel>
 
-                <!-- Queue status, bottom of sidebar -->
-                <Border DockPanel.Dock="Bottom" CornerRadius="8" Padding="12,10" Background="{DynamicResource Brush.Surface}"
-                        BorderBrush="{DynamicResource Brush.Border}" BorderThickness="1" Cursor="Hand"
-                        MouseLeftButtonUp="OnQueueStatusClick" AutomationProperties.Name="Conversion queue status">
-                    <StackPanel Orientation="Horizontal">
-                        <TextBlock Text="&#xE895;" Style="{StaticResource Glyph}" FontSize="14" Margin="0,0,10,0"
-                                   Foreground="{DynamicResource Brush.Accent}"
-                                   Visibility="{Binding HasActiveJobs, Converter={StaticResource BoolToVisibility}}" />
-                        <TextBlock Text="&#xE73E;" Style="{StaticResource Glyph}" FontSize="14" Margin="0,0,10,0"
-                                   Visibility="{Binding HasActiveJobs, Converter={StaticResource BoolToVisibility}, ConverterParameter=Invert}" />
-                        <TextBlock Text="{Binding QueueSummary}" Style="{StaticResource Text.Secondary}" FontSize="12" />
+            <!-- Search field; opens the command palette -->
+            <Button x:Name="SearchField" Grid.Column="1" HorizontalAlignment="Left" Width="420" Height="30" Margin="0,0,16,0"
+                    Command="{Binding OpenSearchCommand}" WindowChrome.IsHitTestVisibleInChrome="True" Cursor="IBeam"
+                    AutomationProperties.Name="Search formats, tools, history (Ctrl+K)" FocusVisualStyle="{x:Null}">
+                <Button.Template>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Bd" CornerRadius="7" Background="{DynamicResource Brush.SurfaceAlt}" BorderBrush="{DynamicResource Brush.Border}"
+                                BorderThickness="1" Padding="12,0">
+                            <DockPanel>
+                                <TextBlock DockPanel.Dock="Right" Text="Ctrl K" Style="{StaticResource Text.Mono}" FontSize="11" VerticalAlignment="Center" />
+                                <ContentControl Style="{StaticResource StrokeIcon}" Width="14" Height="14" Foreground="{DynamicResource Brush.TextTertiary}"
+                                                Tag="M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14zM20 20l-4-4" />
+                                <TextBlock Text="Search formats, tools, history" FontSize="13" Margin="8,0,0,0" VerticalAlignment="Center"
+                                           Foreground="{DynamicResource Brush.TextTertiary}" TextTrimming="CharacterEllipsis" />
+                            </DockPanel>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bd" Property="BorderBrush" Value="{DynamicResource Brush.BorderStrong}" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Button.Template>
+            </Button>
+
+            <StackPanel Grid.Column="2" Orientation="Horizontal">
+                <Button Style="{StaticResource CaptionButton}" ToolTip="Minimize" Click="OnMinimize">
+                    <Path Data="M0,5 H10" Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" StrokeThickness="1" Width="10" Height="10" />
+                </Button>
+                <Button x:Name="MaximizeButton" Style="{StaticResource CaptionButton}" ToolTip="Maximize" Click="OnMaximize">
+                    <Path x:Name="MaximizeGlyph" Data="M0.5,0.5 H9.5 V9.5 H0.5 Z" Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
+                          StrokeThickness="1" Width="10" Height="10" />
+                </Button>
+                <Button Style="{StaticResource CloseCaptionButton}" ToolTip="Close" Click="OnClose">
+                    <Path Data="M0,0 L10,10 M10,0 L0,10" Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" StrokeThickness="1" Width="10" Height="10" />
+                </Button>
+            </StackPanel>
+        </Grid>
+
+        <Grid Grid.Row="1">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="232" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+
+            <!-- Navigation -->
+            <DockPanel Margin="8">
+                <Border DockPanel.Dock="Bottom" CornerRadius="10" Padding="12,14" Background="{DynamicResource Brush.Surface}"
+                        BorderBrush="{DynamicResource Brush.Border}" BorderThickness="1">
+                    <StackPanel>
+                        <StackPanel Orientation="Horizontal">
+                            <Ellipse Width="7" Height="7" Fill="{DynamicResource Brush.AccentText}" Margin="0,0,8,0" />
+                            <TextBlock Text="Fully offline" FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource Brush.Text}" />
+                        </StackPanel>
+                        <TextBlock Text="No account. No uploads. No telemetry." Style="{StaticResource Text.Caption}" TextWrapping="Wrap" Margin="0,8,0,0" />
                     </StackPanel>
                 </Border>
-
-                <StackPanel>
-                    <RadioButton Style="{StaticResource NavItem}" Content="Home" Tag="&#xE80F;" GroupName="Nav"
-                                 IsChecked="{Binding SelectedPage, Converter={StaticResource EnumEquals}, ConverterParameter=Home}" />
-                    <RadioButton Style="{StaticResource NavItem}" Content="Convert" Tag="&#xE8AB;" GroupName="Nav"
-                                 IsChecked="{Binding SelectedPage, Converter={StaticResource EnumEquals}, ConverterParameter=Convert}" />
-                    <RadioButton Style="{StaticResource NavItem}" Content="PDF &amp; archive tools" Tag="&#xE90F;" GroupName="Nav"
-                                 IsChecked="{Binding SelectedPage, Converter={StaticResource EnumEquals}, ConverterParameter=Tools}" />
-                    <RadioButton Style="{StaticResource NavItem}" Content="History" Tag="&#xE81C;" GroupName="Nav"
-                                 IsChecked="{Binding SelectedPage, Converter={StaticResource EnumEquals}, ConverterParameter=History}" />
-                    <RadioButton Style="{StaticResource NavItem}" Content="Settings" Tag="&#xE713;" GroupName="Nav"
-                                 IsChecked="{Binding SelectedPage, Converter={StaticResource EnumEquals}, ConverterParameter=Settings}" />
-                </StackPanel>
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel>
+                        <RadioButton Style="{StaticResource NavItem}" Content="Home" GroupName="Nav"
+                                     Tag="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"
+                                     IsChecked="{Binding SelectedPage, Converter={StaticResource EnumEquals}, ConverterParameter=Home}" />
+                        <RadioButton Style="{StaticResource NavItem}" Content="Convert" GroupName="Nav" Tag="M4 8h14l-3-3M20 16H6l3 3"
+                                     IsChecked="{Binding SelectedPage, Converter={StaticResource EnumEquals}, ConverterParameter=Convert}" />
+                        <RadioButton Style="{StaticResource NavItem}" Content="Batch" GroupName="Nav" Tag="M4 6h16M4 12h16M4 18h10"
+                                     Uid="{Binding BatchBadge}"
+                                     IsChecked="{Binding SelectedPage, Converter={StaticResource EnumEquals}, ConverterParameter=Batch}" />
+                        <RadioButton Style="{StaticResource NavItem}" Content="PDF Tools" GroupName="Nav" Tag="M7 3h7l5 5v13H7zM14 3v5h5M10 14h6M10 17h4"
+                                     IsChecked="{Binding SelectedPage, Converter={StaticResource EnumEquals}, ConverterParameter=PdfTools}" />
+                        <RadioButton Style="{StaticResource NavItem}" Content="Image Tools" GroupName="Nav" Tag="M4 5h16v14H4zM4 16l5-5 4 4 3-3 4 4M15 9h.01"
+                                     IsChecked="{Binding SelectedPage, Converter={StaticResource EnumEquals}, ConverterParameter=ImageTools}" />
+                        <RadioButton Style="{StaticResource NavItem}" Content="Automation" GroupName="Nav" Tag="M13 3L5 13h6l-1 8 8-10h-6z"
+                                     Uid="{Binding AutomationBadge}"
+                                     IsChecked="{Binding SelectedPage, Converter={StaticResource EnumEquals}, ConverterParameter=Automation}" />
+                        <RadioButton Style="{StaticResource NavItem}" Content="Presets" GroupName="Nav"
+                                     Tag="M12 3l2.6 5.6 6 .7-4.5 4.1 1.2 6L12 16.8 6.7 19.4l1.2-6L3.4 9.3l6-.7z"
+                                     IsChecked="{Binding SelectedPage, Converter={StaticResource EnumEquals}, ConverterParameter=Presets}" />
+                        <RadioButton Style="{StaticResource NavItem}" Content="History" GroupName="Nav" Tag="M3 12a9 9 0 1 0 3-6.7L3 8M3 3v5h5M12 7v5l3 2"
+                                     IsChecked="{Binding SelectedPage, Converter={StaticResource EnumEquals}, ConverterParameter=History}" />
+                        <RadioButton Style="{StaticResource NavItem}" Content="Settings" GroupName="Nav"
+                                     Tag="M12 9a3 3 0 1 0 0 6 3 3 0 0 0 0-6zM12 2v3M12 19v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M2 12h3M19 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"
+                                     IsChecked="{Binding SelectedPage, Converter={StaticResource EnumEquals}, ConverterParameter=Settings}" />
+                    </StackPanel>
+                </ScrollViewer>
             </DockPanel>
-        </Border>
 
-        <!-- Page content -->
-        <ContentControl Grid.Column="1" Content="{Binding CurrentPage}" Focusable="False" />
+            <!-- Page content -->
+            <Border Grid.Column="1" Background="{DynamicResource Brush.Background}" CornerRadius="10,0,0,0"
+                    BorderBrush="{DynamicResource Brush.Border}" BorderThickness="1,1,0,0" ClipToBounds="True">
+                <ContentControl Content="{Binding CurrentPage}" Focusable="False" />
+            </Border>
+        </Grid>
+
+        <!-- Command palette (Ctrl+K) -->
+        <Popup x:Name="SearchPopup" IsOpen="{Binding IsSearchOpen}" PlacementTarget="{Binding ElementName=SearchField}" Placement="Bottom"
+               VerticalOffset="6" StaysOpen="False" AllowsTransparency="True" PopupAnimation="Fade" Opened="OnSearchOpened"
+               Closed="OnSearchClosed">
+            <Border Width="520" CornerRadius="10" Background="{DynamicResource Brush.Surface}" BorderBrush="{DynamicResource Brush.BorderStrong}"
+                    BorderThickness="1" Padding="8" Margin="0,0,16,16">
+                <Border.Effect><DropShadowEffect BlurRadius="24" ShadowDepth="8" Direction="270" Opacity="0.4" Color="Black" /></Border.Effect>
+                <StackPanel>
+                    <TextBox x:Name="SearchBox" Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}" FontSize="14"
+                             PreviewKeyDown="OnSearchKeyDown" AutomationProperties.Name="Search formats, tools, history" />
+                    <ListBox x:Name="SearchList" ItemsSource="{Binding SearchResults}" SelectedItem="{Binding SelectedResult}" MaxHeight="380"
+                             Margin="0,8,0,0" BorderThickness="0" Background="Transparent" MouseLeftButtonUp="OnSearchResultClick"
+                             AutomationProperties.Name="Search results">
+                        <ListBox.ItemContainerStyle>
+                            <Style TargetType="ListBoxItem" BasedOn="{StaticResource {x:Type ListBoxItem}}">
+                                <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                                <Setter Property="AutomationProperties.Name" Value="{Binding Title}" />
+                            </Style>
+                        </ListBox.ItemContainerStyle>
+                        <ListBox.ItemTemplate>
+                            <DataTemplate>
+                                <DockPanel>
+                                    <TextBlock DockPanel.Dock="Right" Text="{Binding Kind}" Style="{StaticResource Text.Mono}" FontSize="11" VerticalAlignment="Center" />
+                                    <TextBlock Text="{Binding Title}" FontSize="14" Foreground="{DynamicResource Brush.Text}" TextTrimming="CharacterEllipsis" />
+                                </DockPanel>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+                    <TextBlock Text="Nothing matches. Try a page, a tool, a preset or a file name." Margin="6,8">
+                        <TextBlock.Style>
+                            <Style TargetType="TextBlock" BasedOn="{StaticResource Text.Caption}">
+                                <Setter Property="Visibility" Value="Collapsed" />
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding SearchResults.Count}" Value="0">
+                                        <Setter Property="Visibility" Value="Visible" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TextBlock.Style>
+                    </TextBlock>
+                </StackPanel>
+            </Border>
+        </Popup>
 
         <!-- Drop overlay: dropping anywhere in the window stages files on the Convert page -->
-        <Border x:Name="DropOverlay" Grid.ColumnSpan="2" Visibility="Collapsed" IsHitTestVisible="False"
-                Background="{DynamicResource Brush.DropHighlight}" Opacity="0.92">
-            <Border BorderBrush="{DynamicResource Brush.Accent}" BorderThickness="3" CornerRadius="16" Margin="24">
+        <Border x:Name="DropOverlay" Grid.RowSpan="2" Visibility="Collapsed" IsHitTestVisible="False"
+                Background="{DynamicResource Brush.DropHighlight}" Opacity="0.94">
+            <Border BorderBrush="{DynamicResource Brush.AccentText}" BorderThickness="1.5" CornerRadius="16" Margin="24">
                 <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
-                    <TextBlock Text="&#xE896;" Style="{StaticResource Glyph}" FontSize="44" Foreground="{DynamicResource Brush.Accent}" />
-                    <TextBlock Text="Drop files to convert" Style="{StaticResource Text.Title}" Margin="0,14,0,0" HorizontalAlignment="Center" />
+                    <Viewbox Width="64" Height="64" HorizontalAlignment="Center">
+                        <Canvas Width="100" Height="100">
+                            <Path Data="{StaticResource Geo.MarkArc}" Stroke="{DynamicResource Brush.AccentText}" StrokeThickness="11" />
+                            <Ellipse Canvas.Left="64.2" Canvas.Top="21.8" Width="14" Height="14" Fill="{DynamicResource Brush.AccentText}" />
+                            <Ellipse Canvas.Left="42" Canvas.Top="42" Width="16" Height="16" Fill="{DynamicResource Brush.Text}" />
+                        </Canvas>
+                    </Viewbox>
+                    <TextBlock Text="Drop files to convert" Style="{StaticResource Text.Title}" FontSize="24" Margin="0,14,0,0" HorizontalAlignment="Center" />
                 </StackPanel>
             </Border>
         </Border>

@@ -213,6 +213,7 @@ public sealed class ConversionCapabilityRegistry
                 throw new ConversionException($"{unsupported.FileName} cannot be used for {combine.Route.Label}.");
             }
             EnsureAvailable(combine.Converter, combine.Route);
+            combine.Converter.ValidateOptions(combine.Route, inputs, options);
             return [new ConversionPlan(combine.Converter, combine.Route, inputs, options.Clone(), output)];
         }
 
@@ -237,6 +238,7 @@ public sealed class ConversionCapabilityRegistry
             }
 
             EnsureAvailable(match.Converter, match.Route);
+            match.Converter.ValidateOptions(match.Route, [input], options);
             plans.Add(new ConversionPlan(match.Converter, match.Route, [input], options.Clone(), output));
         }
         return plans;

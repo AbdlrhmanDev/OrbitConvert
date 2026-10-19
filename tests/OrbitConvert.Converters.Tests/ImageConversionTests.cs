@@ -47,7 +47,7 @@ public class ImageConversionTests : IDisposable
     [Fact]
     public void Offers_only_formats_the_bundled_engine_can_write()
     {
-        foreach (var route in _converter.Routes)
+        foreach (var route in _converter.Routes.Where(r => r.Output is not null))
         {
             var availability = _converter.GetAvailability(route);
             var format = ImageMagickConverter.ToMagick(route.Output!);

@@ -10,14 +10,23 @@
         <Style x:Key="OptionGroup" TargetType="StackPanel">
             <Setter Property="Margin" Value="0,0,0,8" />
         </Style>
-        <Style x:Key="ChipList" TargetType="ListBox">
+        <Style x:Key="FactLabel" TargetType="TextBlock" BasedOn="{StaticResource Text.Caption}" />
+        <Style x:Key="FactValue" TargetType="TextBlock">
+            <Setter Property="FontFamily" Value="{StaticResource MonoFont}" />
+            <Setter Property="FontSize" Value="13" />
+            <Setter Property="Margin" Value="0,2,0,0" />
+            <Setter Property="TextTrimming" Value="CharacterEllipsis" />
+            <Setter Property="Foreground" Value="{DynamicResource Brush.Text}" />
+        </Style>
+        <!-- Output format tiles: mono label + hint; lime border when selected; faded when unavailable. -->
+        <Style x:Key="FormatTiles" TargetType="ListBox">
             <Setter Property="Background" Value="Transparent" />
             <Setter Property="BorderThickness" Value="0" />
             <Setter Property="ScrollViewer.HorizontalScrollBarVisibility" Value="Disabled" />
             <Setter Property="ItemsPanel">
                 <Setter.Value>
                     <ItemsPanelTemplate>
-                        <WrapPanel />
+                        <WrapPanel ItemWidth="124" />
                     </ItemsPanelTemplate>
                 </Setter.Value>
             </Setter>
@@ -29,26 +38,34 @@
                         <Setter Property="FocusVisualStyle" Value="{x:Null}" />
                         <Setter Property="ToolTip" Value="{Binding ToolTip}" />
                         <Setter Property="AutomationProperties.Name" Value="{Binding Label}" />
+                        <Setter Property="AutomationProperties.HelpText" Value="{Binding Hint}" />
                         <Setter Property="Template">
                             <Setter.Value>
                                 <ControlTemplate TargetType="ListBoxItem">
-                                    <Border x:Name="Bd" Background="{DynamicResource Brush.SurfaceAlt}" BorderBrush="{DynamicResource Brush.Border}"
-                                            BorderThickness="1.5" CornerRadius="8" Padding="10,7" MinWidth="92">
-                                        <ContentPresenter />
+                                    <Border x:Name="Bd" Background="{DynamicResource Brush.Surface}" BorderBrush="{DynamicResource Brush.Border}"
+                                            BorderThickness="1.5" CornerRadius="10" Padding="12">
+                                        <StackPanel>
+                                            <TextBlock x:Name="Label" Text="{Binding Label}" FontFamily="{StaticResource MonoFont}" FontSize="14" FontWeight="Bold"
+                                                       Foreground="{DynamicResource Brush.Text}" TextTrimming="CharacterEllipsis" />
+                                            <TextBlock Text="{Binding Hint}" FontSize="11" Margin="0,4,0,0" Foreground="{DynamicResource Brush.TextTertiary}"
+                                                       TextTrimming="CharacterEllipsis" />
+                                        </StackPanel>
                                     </Border>
                                     <ControlTemplate.Triggers>
                                         <Trigger Property="IsMouseOver" Value="True">
-                                            <Setter TargetName="Bd" Property="Background" Value="{DynamicResource Brush.SurfaceHover}" />
+                                            <Setter TargetName="Bd" Property="BorderBrush" Value="{DynamicResource Brush.BorderStrong}" />
                                         </Trigger>
                                         <Trigger Property="IsSelected" Value="True">
                                             <Setter TargetName="Bd" Property="BorderBrush" Value="{DynamicResource Brush.Accent}" />
                                             <Setter TargetName="Bd" Property="Background" Value="{DynamicResource Brush.AccentSubtle}" />
+                                            <Setter TargetName="Label" Property="Foreground" Value="{DynamicResource Brush.AccentText}" />
                                         </Trigger>
                                         <Trigger Property="IsKeyboardFocused" Value="True">
-                                            <Setter TargetName="Bd" Property="BorderBrush" Value="{DynamicResource Brush.Accent}" />
+                                            <Setter TargetName="Bd" Property="BorderBrush" Value="{DynamicResource Brush.AccentText}" />
                                         </Trigger>
                                         <DataTrigger Binding="{Binding IsAvailable}" Value="False">
-                                            <Setter TargetName="Bd" Property="Opacity" Value="0.5" />
+                                            <Setter TargetName="Bd" Property="Opacity" Value="0.45" />
+                                            <Setter Property="Cursor" Value="No" />
                                         </DataTrigger>
                                     </ControlTemplate.Triggers>
                                 </ControlTemplate>
@@ -60,132 +77,172 @@
         </Style>
     </UserControl.Resources>
 
-    <Grid Margin="32,28,24,24">
+    <Grid Margin="32,32,24,24">
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="*" MinWidth="420" />
             <ColumnDefinition Width="24" />
-            <ColumnDefinition Width="380" />
+            <ColumnDefinition Width="360" />
         </Grid.ColumnDefinitions>
 
-        <!-- Left: staging -->
         <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Padding="0,0,8,0">
             <StackPanel>
-                <TextBlock Text="Convert" Style="{StaticResource Text.Display}" />
-                <TextBlock Text="Add files, choose a format, adjust options, and start." Style="{StaticResource Text.Secondary}" Margin="0,4,0,20" />
+                <DockPanel>
+                    <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
+                        <Button Content="Add files" Style="{StaticResource OutlineButton}" Command="{Binding AddFilesCommand}" />
+                        <Button Content="Clear" Style="{StaticResource OutlineButton}" Margin="8,0,0,0" Command="{Binding ClearFilesCommand}"
+                                Visibility="{Binding HasFiles, Converter={StaticResource BoolToVisibility}}" />
+                    </StackPanel>
+                    <TextBlock Text="Convert" Style="{StaticResource Text.Display}" />
+                </DockPanel>
 
-                <!-- Files -->
-                <Border Style="{StaticResource Card}" Padding="16">
-                    <StackPanel>
-                        <DockPanel Margin="0,0,0,10">
-                            <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
-                                <Button Style="{StaticResource SubtleButton}" Command="{Binding AddFilesCommand}">
-                                    <StackPanel Orientation="Horizontal">
-                                        <TextBlock Text="&#xE710;" Style="{StaticResource Glyph}" FontSize="12" Margin="0,0,6,0" Foreground="{DynamicResource Brush.Text}" />
-                                        <TextBlock Text="Add files" />
-                                    </StackPanel>
-                                </Button>
-                                <Button Content="Clear" Style="{StaticResource SubtleButton}" Command="{Binding ClearFilesCommand}"
-                                        Visibility="{Binding HasFiles, Converter={StaticResource BoolToVisibility}}" />
-                            </StackPanel>
-                            <TextBlock Text="Files" Style="{StaticResource Text.Subtitle}" VerticalAlignment="Center" />
-                        </DockPanel>
+                <!-- Empty state -->
+                <Border CornerRadius="14" Padding="28" Margin="0,20,0,0" Background="{DynamicResource Brush.Surface}"
+                        BorderBrush="{DynamicResource Brush.Border}" BorderThickness="1"
+                        Visibility="{Binding HasFiles, Converter={StaticResource BoolToVisibility}, ConverterParameter=Invert}">
+                    <StackPanel HorizontalAlignment="Center">
+                        <TextBlock Text="No files yet" Style="{StaticResource Text.Subtitle}" HorizontalAlignment="Center" />
+                        <TextBlock Text="Drop files anywhere in this window, or use Add files." Style="{StaticResource Text.Secondary}" HorizontalAlignment="Center" Margin="0,4,0,0" />
+                    </StackPanel>
+                </Border>
 
-                        <!-- Empty state -->
-                        <Border CornerRadius="10" Padding="20" Background="{DynamicResource Brush.SurfaceAlt}"
-                                Visibility="{Binding HasFiles, Converter={StaticResource BoolToVisibility}, ConverterParameter=Invert}">
-                            <StackPanel HorizontalAlignment="Center">
-                                <TextBlock Text="&#xE8E5;" Style="{StaticResource Glyph}" FontSize="26" Margin="0,0,0,8" />
-                                <TextBlock Text="No files yet" Style="{StaticResource Text.Subtitle}" HorizontalAlignment="Center" />
-                                <TextBlock Text="Drop files anywhere in this window or use Add files." Style="{StaticResource Text.Secondary}" HorizontalAlignment="Center" />
-                            </StackPanel>
+                <!-- Preview card -->
+                <Border CornerRadius="14" Padding="16" Margin="0,20,0,0" Background="{DynamicResource Brush.Surface}"
+                        BorderBrush="{DynamicResource Brush.Border}" BorderThickness="1" DataContext="{Binding PreviewFile}"
+                        Visibility="{Binding Converter={StaticResource NullToVisibility}}">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="88" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <Border Width="88" Height="88" CornerRadius="10" Background="{DynamicResource Brush.SurfaceAlt}" BorderBrush="{DynamicResource Brush.Border}"
+                                BorderThickness="1" VerticalAlignment="Top" ClipToBounds="True">
+                            <Grid>
+                                <TextBlock Text="{Binding TypeLabel}" Style="{StaticResource Text.Mono}" FontSize="11" HorizontalAlignment="Center" VerticalAlignment="Center"
+                                           Foreground="{Binding Category, Converter={StaticResource CategoryToBrush}}" />
+                                <Image Source="{Binding Preview}" Stretch="UniformToFill" RenderOptions.BitmapScalingMode="HighQuality" />
+                            </Grid>
                         </Border>
-
-                        <ListBox ItemsSource="{Binding Files}" SelectedItem="{Binding SelectedFile}" MaxHeight="260" BorderThickness="0"
-                                 Background="Transparent" ScrollViewer.HorizontalScrollBarVisibility="Disabled"
-                                 Visibility="{Binding HasFiles, Converter={StaticResource BoolToVisibility}}"
-                                 AutomationProperties.Name="Files to convert">
-                            <ListBox.ItemContainerStyle>
-                                <Style TargetType="ListBoxItem" BasedOn="{StaticResource {x:Type ListBoxItem}}">
-                                    <Setter Property="HorizontalContentAlignment" Value="Stretch" />
-                                    <Setter Property="Padding" Value="6,4" />
-                                    <Setter Property="AutomationProperties.Name" Value="{Binding Name}" />
-                                </Style>
-                            </ListBox.ItemContainerStyle>
-                            <ListBox.ItemTemplate>
-                                <DataTemplate>
-                                    <Grid>
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="Auto" />
-                                            <ColumnDefinition Width="*" />
-                                            <ColumnDefinition Width="Auto" />
-                                            <ColumnDefinition Width="Auto" />
-                                        </Grid.ColumnDefinitions>
-                                        <c:FormatBadge Label="{Binding TypeLabel}" Category="{Binding Category}" Width="26" Height="31" Margin="0,0,12,0" />
-                                        <StackPanel Grid.Column="1" VerticalAlignment="Center">
-                                            <TextBlock Text="{Binding Name}" Style="{StaticResource Text.Body}" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis"
-                                                       ToolTip="{Binding Input.Path}" />
-                                            <TextBlock Style="{StaticResource Text.Caption}" TextTrimming="CharacterEllipsis">
-                                                <Run Text="{Binding TypeName, Mode=OneWay}" /><Run Text=" · " /><Run Text="{Binding SizeText, Mode=OneWay}" />
-                                            </TextBlock>
-                                            <TextBlock Text="{Binding Warning}" Style="{StaticResource Text.Caption}" Foreground="{DynamicResource Brush.Warning}"
-                                                       TextWrapping="Wrap" Visibility="{Binding Warning, Converter={StaticResource NullToVisibility}}" />
-                                        </StackPanel>
-                                        <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
-                                            <Button Content="&#xE70E;" Style="{StaticResource IconButton}" ToolTip="Move up"
-                                                    Command="{Binding DataContext.MoveUpCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" CommandParameter="{Binding}" />
-                                            <Button Content="&#xE70D;" Style="{StaticResource IconButton}" ToolTip="Move down"
-                                                    Command="{Binding DataContext.MoveDownCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" CommandParameter="{Binding}" />
-                                        </StackPanel>
-                                        <Button Grid.Column="3" Content="&#xE711;" Style="{StaticResource IconButton}" ToolTip="Remove from list"
-                                                Command="{Binding DataContext.RemoveFileCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" CommandParameter="{Binding}" />
-                                    </Grid>
-                                </DataTemplate>
-                            </ListBox.ItemTemplate>
-                        </ListBox>
-                        <TextBlock Text="Analyzing files…" Style="{StaticResource Text.Caption}" Margin="0,6,0,0"
-                                   Visibility="{Binding IsAnalyzing, Converter={StaticResource BoolToVisibility}}" />
-                    </StackPanel>
-                </Border>
-
-                <!-- Targets -->
-                <Border Style="{StaticResource Card}" Padding="16" Margin="0,14,0,0" Visibility="{Binding HasFiles, Converter={StaticResource BoolToVisibility}}">
-                    <StackPanel>
-                        <TextBlock Text="Convert to" Style="{StaticResource Text.Subtitle}" Margin="0,0,0,10" />
-                        <TextBlock Text="{Binding TargetsMessage}" Style="{StaticResource Text.Secondary}" Foreground="{DynamicResource Brush.Warning}" Margin="0,0,0,8"
-                                   Visibility="{Binding TargetsMessage, Converter={StaticResource NullToVisibility}}" />
-                        <ListBox ItemsSource="{Binding Targets}" SelectedItem="{Binding SelectedTarget}" Style="{StaticResource ChipList}"
-                                 AutomationProperties.Name="Output formats">
-                            <ListBox.ItemTemplate>
-                                <DataTemplate>
-                                    <StackPanel Orientation="Horizontal">
-                                        <c:FormatBadge Label="{Binding Label}" Category="{Binding Category}" Glyph="{Binding Glyph}" Width="20" Height="24" Margin="0,0,8,0" />
-                                        <TextBlock Text="{Binding Label}" FontWeight="SemiBold" VerticalAlignment="Center" Foreground="{DynamicResource Brush.Text}" />
-                                        <TextBlock Text=" β" FontWeight="Bold" Foreground="{DynamicResource Brush.Warning}" VerticalAlignment="Center"
-                                                   Visibility="{Binding Experimental, Converter={StaticResource BoolToVisibility}}" />
-                                    </StackPanel>
-                                </DataTemplate>
-                            </ListBox.ItemTemplate>
-                        </ListBox>
-                        <!-- Selected target explanation -->
-                        <StackPanel DataContext="{Binding SelectedTarget}" Visibility="{Binding Converter={StaticResource NullToVisibility}}">
-                            <TextBlock Text="{Binding Target.Description}" Style="{StaticResource Text.Secondary}" />
-                            <TextBlock Style="{StaticResource Text.Secondary}" Foreground="{DynamicResource Brush.Danger}" Margin="0,4,0,0"
-                                       Visibility="{Binding IsAvailable, Converter={StaticResource BoolToVisibility}, ConverterParameter=Invert}">
-                                <Run Text="Unavailable: " FontWeight="SemiBold" /><Run Text="{Binding Target.UnavailableReason, Mode=OneWay}" />
-                            </TextBlock>
-                            <Border CornerRadius="6" Padding="10,8" Margin="0,8,0,0" Background="{DynamicResource Brush.SurfaceAlt}"
-                                    Visibility="{Binding Target.Limitations, Converter={StaticResource NullToVisibility}}">
-                                <DockPanel>
-                                    <TextBlock Text="&#xE946;" Style="{StaticResource Glyph}" FontSize="13" VerticalAlignment="Top" Margin="0,2,8,0" />
-                                    <TextBlock Text="{Binding Target.Limitations}" Style="{StaticResource Text.Secondary}" FontSize="12" />
-                                </DockPanel>
-                            </Border>
+                        <StackPanel Grid.Column="1" Margin="16,0,0,0">
+                            <TextBlock Text="{Binding Name}" FontSize="18" FontWeight="SemiBold" Foreground="{DynamicResource Brush.Text}"
+                                       TextTrimming="CharacterEllipsis" ToolTip="{Binding Input.Path}" />
+                            <UniformGrid Columns="4" Margin="0,10,0,0">
+                                <StackPanel Margin="0,0,8,0">
+                                    <TextBlock Text="Type" Style="{StaticResource FactLabel}" />
+                                    <TextBlock Text="{Binding TypeName}" Style="{StaticResource FactValue}" ToolTip="{Binding TypeName}"
+                                               Foreground="{Binding Category, Converter={StaticResource CategoryToBrush}}" />
+                                </StackPanel>
+                                <StackPanel Margin="0,0,8,0">
+                                    <TextBlock Text="Size" Style="{StaticResource FactLabel}" />
+                                    <TextBlock Text="{Binding SizeText}" Style="{StaticResource FactValue}" />
+                                </StackPanel>
+                                <StackPanel Margin="0,0,8,0">
+                                    <TextBlock Text="Dimensions" Style="{StaticResource FactLabel}" />
+                                    <TextBlock Text="{Binding Dimensions}" Style="{StaticResource FactValue}" />
+                                </StackPanel>
+                                <StackPanel>
+                                    <TextBlock Text="Signature" Style="{StaticResource FactLabel}" />
+                                    <TextBlock Text="{Binding SignatureText}" Style="{StaticResource FactValue}"
+                                               ToolTip="Whether the type was confirmed from the file's content (magic bytes) or only from its extension" />
+                                </StackPanel>
+                            </UniformGrid>
+                            <TextBlock Text="{Binding Warning}" Style="{StaticResource Text.Caption}" Foreground="{DynamicResource Brush.Warning}" TextWrapping="Wrap"
+                                       Margin="0,8,0,0" Visibility="{Binding Warning, Converter={StaticResource NullToVisibility}}" />
                         </StackPanel>
-                    </StackPanel>
+                    </Grid>
                 </Border>
 
-                <!-- Options -->
-                <Border Style="{StaticResource Card}" Padding="16" Margin="0,14,0,0" Visibility="{Binding HasOptions, Converter={StaticResource BoolToVisibility}}">
+                <!-- Several files: compact list; selecting one previews it -->
+                <Border Style="{StaticResource Card}" Padding="8" Margin="0,12,0,0" Visibility="{Binding HasSeveralFiles, Converter={StaticResource BoolToVisibility}}">
+                    <ListBox ItemsSource="{Binding Files}" SelectedItem="{Binding SelectedFile}" MaxHeight="220" BorderThickness="0"
+                             Background="Transparent" ScrollViewer.HorizontalScrollBarVisibility="Disabled" AutomationProperties.Name="Files to convert">
+                        <ListBox.ItemContainerStyle>
+                            <Style TargetType="ListBoxItem" BasedOn="{StaticResource {x:Type ListBoxItem}}">
+                                <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                                <Setter Property="Padding" Value="6,3" />
+                                <Setter Property="AutomationProperties.Name" Value="{Binding Name}" />
+                            </Style>
+                        </ListBox.ItemContainerStyle>
+                        <ListBox.ItemTemplate>
+                            <DataTemplate>
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto" /><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /><ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <c:FormatBadge Label="{Binding TypeLabel}" Category="{Binding Category}" Width="26" Height="26" Margin="0,0,10,0" />
+                                    <TextBlock Grid.Column="1" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" FontSize="13" Foreground="{DynamicResource Brush.Text}">
+                                        <Run Text="{Binding Name, Mode=OneWay}" /><Run Text="  " /><Run Text="{Binding SizeText, Mode=OneWay}" FontFamily="{StaticResource MonoFont}"
+                                                                                                        FontSize="11" Foreground="{DynamicResource Brush.TextTertiary}" />
+                                    </TextBlock>
+                                    <StackPanel Grid.Column="2" Orientation="Horizontal">
+                                        <Button Content="&#xE70E;" Style="{StaticResource IconButton}" ToolTip="Move up" Width="28" Height="28"
+                                                Command="{Binding DataContext.MoveUpCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" CommandParameter="{Binding}" />
+                                        <Button Content="&#xE70D;" Style="{StaticResource IconButton}" ToolTip="Move down" Width="28" Height="28"
+                                                Command="{Binding DataContext.MoveDownCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" CommandParameter="{Binding}" />
+                                    </StackPanel>
+                                    <Button Grid.Column="3" Content="&#xE711;" Style="{StaticResource IconButton}" ToolTip="Remove from list" Width="28" Height="28"
+                                            Command="{Binding DataContext.RemoveFileCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" CommandParameter="{Binding}" />
+                                </Grid>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+                </Border>
+                <TextBlock Text="Analyzing files…" Style="{StaticResource Text.Caption}" Margin="0,8,0,0"
+                           Visibility="{Binding IsAnalyzing, Converter={StaticResource BoolToVisibility}}" />
+
+                <!-- Output format -->
+                <StackPanel Margin="0,20,0,0" Visibility="{Binding HasFiles, Converter={StaticResource BoolToVisibility}}">
+                    <TextBlock Text="Output format" Style="{StaticResource Text.Section}" />
+                    <TextBlock Text="{Binding TargetsMessage}" Style="{StaticResource Text.Secondary}" Foreground="{DynamicResource Brush.Warning}" Margin="0,0,0,8"
+                               Visibility="{Binding TargetsMessage, Converter={StaticResource NullToVisibility}}" />
+                    <ListBox ItemsSource="{Binding Targets}" SelectedItem="{Binding SelectedTarget}" Style="{StaticResource FormatTiles}"
+                             AutomationProperties.Name="Output formats" />
+                    <StackPanel DataContext="{Binding SelectedTarget}" Visibility="{Binding Converter={StaticResource NullToVisibility}}">
+                        <TextBlock Text="{Binding Target.Description}" Style="{StaticResource Text.Caption}" TextWrapping="Wrap" />
+                        <TextBlock Style="{StaticResource Text.Caption}" Foreground="{DynamicResource Brush.Danger}" Margin="0,4,0,0" TextWrapping="Wrap"
+                                   Visibility="{Binding IsAvailable, Converter={StaticResource BoolToVisibility}, ConverterParameter=Invert}">
+                            <Run Text="Unavailable: " FontWeight="SemiBold" /><Run Text="{Binding Target.UnavailableReason, Mode=OneWay}" />
+                        </TextBlock>
+                        <TextBlock Text="{Binding Target.Limitations}" Style="{StaticResource Text.Caption}" TextWrapping="Wrap" Margin="0,4,0,0"
+                                   Visibility="{Binding Target.Limitations, Converter={StaticResource NullToVisibility}}" />
+                    </StackPanel>
+                </StackPanel>
+
+                <!-- Image quality with a measured size -->
+                <Grid Margin="0,20,0,0" Visibility="{Binding ShowImageOptions, Converter={StaticResource BoolToVisibility}}">
+                    <Grid.ColumnDefinitions><ColumnDefinition /><ColumnDefinition Width="12" /><ColumnDefinition /></Grid.ColumnDefinitions>
+                    <Border Style="{StaticResource Card}" Padding="16">
+                        <StackPanel>
+                            <DockPanel>
+                                <TextBlock DockPanel.Dock="Right" Text="{Binding ImageQuality}" FontFamily="{StaticResource MonoFont}" FontSize="14" Foreground="{DynamicResource Brush.Text}" />
+                                <TextBlock Text="Quality" FontSize="14" Foreground="{DynamicResource Brush.Text}" />
+                            </DockPanel>
+                            <Slider Minimum="1" Maximum="100" Value="{Binding ImageQuality}" IsSnapToTickEnabled="True" TickFrequency="1" Margin="0,10,0,0"
+                                    AutomationProperties.Name="Quality" ToolTip="Used by JPG, WebP, AVIF and HEIC" />
+                            <TextBlock Text="{Binding EstimateText, TargetNullValue='Lossless formats ignore quality.'}" Style="{StaticResource Text.Caption}"
+                                       TextWrapping="Wrap" Margin="0,10,0,0" />
+                        </StackPanel>
+                    </Border>
+                    <Border Grid.Column="2" Style="{StaticResource Card}" Padding="16">
+                        <StackPanel>
+                            <DockPanel>
+                                <TextBlock DockPanel.Dock="Right" Text="{Binding ResizeText}" Style="{StaticResource Text.Mono}" FontSize="13" ToolTip="Set the maximum size under Options below" />
+                                <TextBlock Text="Resize (max)" FontSize="14" Foreground="{DynamicResource Brush.Text}" />
+                            </DockPanel>
+                            <DockPanel Margin="0,12,0,0">
+                                <CheckBox DockPanel.Dock="Right" Style="{StaticResource Switch}" IsChecked="{Binding StripMetadata}" AutomationProperties.Name="Strip metadata" />
+                                <TextBlock Text="Strip metadata" FontSize="14" Foreground="{DynamicResource Brush.Text}" VerticalAlignment="Center" />
+                            </DockPanel>
+                            <DockPanel Margin="0,12,0,0">
+                                <TextBlock DockPanel.Dock="Right" Text="Auto" Style="{StaticResource Text.Mono}" FontSize="13"
+                                           ToolTip="Kept when the output format supports transparency; otherwise filled with the background color below." />
+                                <TextBlock Text="Keep transparency" FontSize="14" Foreground="{DynamicResource Brush.Text}" />
+                            </DockPanel>
+                        </StackPanel>
+                    </Border>
+                </Grid>
+
+                <!-- All options -->
+                <Border Style="{StaticResource Card}" Padding="16" Margin="0,12,0,0" Visibility="{Binding HasOptions, Converter={StaticResource BoolToVisibility}}">
                     <StackPanel>
                         <DockPanel>
                             <Button DockPanel.Dock="Right" Content="Reset to defaults" Style="{StaticResource SubtleButton}" FontSize="12" Command="{Binding ResetOptionsCommand}" />
@@ -198,9 +255,6 @@
 
                         <!-- Image -->
                         <StackPanel Style="{StaticResource OptionGroup}" Visibility="{Binding ShowImageOptions, Converter={StaticResource BoolToVisibility}}">
-                            <TextBlock Style="{StaticResource OptionLabel}"><Run Text="Quality: " /><Run Text="{Binding EditingOptions.Image.Quality, Mode=OneWay}" FontWeight="SemiBold" /></TextBlock>
-                            <Slider Minimum="1" Maximum="100" Value="{Binding EditingOptions.Image.Quality}" IsSnapToTickEnabled="True" TickFrequency="1"
-                                    AutomationProperties.Name="Quality" ToolTip="Used by JPG, WebP, AVIF and HEIC" />
                             <Grid Margin="0,4,0,0">
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition /><ColumnDefinition Width="12" /><ColumnDefinition /><ColumnDefinition Width="12" /><ColumnDefinition />
@@ -230,8 +284,7 @@
                                 <TextBox Text="{Binding EditingOptions.Image.CropHeight, TargetNullValue={x:Static sys:String.Empty}}" AutomationProperties.Name="Crop height" />
                             </UniformGrid>
                             <WrapPanel Margin="0,12,0,0">
-                                <CheckBox Content="Remove metadata (EXIF, GPS)" IsChecked="{Binding EditingOptions.Image.StripMetadata}" Margin="0,0,18,6" />
-                                <CheckBox Content="Convert colors to sRGB" IsChecked="{Binding EditingOptions.Image.ConvertToSrgb}" Margin="0,0,18,6" />
+                                                                <CheckBox Content="Convert colors to sRGB" IsChecked="{Binding EditingOptions.Image.ConvertToSrgb}" Margin="0,0,18,6" />
                                 <CheckBox Content="Keep animation" IsChecked="{Binding EditingOptions.Image.KeepAnimation}" Margin="0,0,18,6" />
                             </WrapPanel>
                             <TextBlock Text="Background for transparent areas (JPG, BMP, PDF)" Style="{StaticResource OptionLabel}" />
@@ -289,8 +342,11 @@
 
                         <!-- PDF -->
                         <StackPanel Style="{StaticResource OptionGroup}" Visibility="{Binding ShowPdfPages, Converter={StaticResource BoolToVisibility}}">
-                            <TextBlock Text="Pages (e.g. 1-3, 5, 8-). Empty means all pages." Style="{StaticResource OptionLabel}" />
-                            <TextBox Text="{Binding EditingOptions.Pdf.PageRange, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="Page range" />
+                            <TextBlock Text="{Binding PdfPagesHint}" Style="{StaticResource OptionLabel}" />
+                            <TextBox Text="{Binding PdfPageRange, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="Page range" />
+                            <TextBlock Text="A page range is required before this job can start."
+                                       Foreground="{DynamicResource Brush.Danger}" FontSize="12" Margin="2,6,0,0"
+                                       Visibility="{Binding IsPageRangeMissing, Converter={StaticResource BoolToVisibility}}" />
                         </StackPanel>
                         <StackPanel Style="{StaticResource OptionGroup}" Visibility="{Binding ShowPdfRotate, Converter={StaticResource BoolToVisibility}}">
                             <TextBlock Text="Rotation" Style="{StaticResource OptionLabel}" />
@@ -328,110 +384,89 @@
                         </StackPanel>
                     </StackPanel>
                 </Border>
+            </StackPanel>
+        </ScrollViewer>
 
-                <!-- Output -->
-                <Border Style="{StaticResource Card}" Padding="16" Margin="0,14,0,0" Visibility="{Binding HasFiles, Converter={StaticResource BoolToVisibility}}">
+        <!-- Output panel -->
+        <ScrollViewer Grid.Column="2" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" VerticalAlignment="Top">
+            <StackPanel>
+                <Border CornerRadius="14" Padding="20" Background="{DynamicResource Brush.Surface}" BorderBrush="{DynamicResource Brush.Border}" BorderThickness="1">
                     <StackPanel>
-                        <TextBlock Text="Save to" Style="{StaticResource Text.Subtitle}" Margin="0,0,0,8" />
+                        <TextBlock Text="OUTPUT" Style="{StaticResource Text.Mono}" FontSize="12" />
+                        <TextBlock Text="{Binding OutputName}" FontFamily="{StaticResource MonoFont}" FontSize="15" TextWrapping="Wrap" Margin="0,14,0,0"
+                                   Foreground="{DynamicResource Brush.Text}" />
+                        <TextBlock Text="{Binding LocationText}" Style="{StaticResource Text.Caption}" FontSize="13" TextWrapping="Wrap" Margin="0,14,0,0" />
+                        <TextBlock Text="{Binding CollisionText}" Style="{StaticResource Text.Caption}" FontSize="13" Margin="0,14,0,0" />
+                        <ProgressBar Style="{StaticResource SlimProgress}" Height="6" Margin="0,14,0,0" Maximum="100" Background="{DynamicResource Brush.Track}"
+                                     Value="{Binding LastBatch.Progress, Mode=OneWay, Converter={StaticResource ProgressPercent}, FallbackValue=0}" />
+                        <TextBlock Text="{Binding BatchStatus}" FontSize="13" Margin="0,14,0,0" TextWrapping="Wrap">
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="Foreground" Value="{DynamicResource Brush.TextTertiary}" />
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding BatchDone}" Value="True">
+                                            <Setter Property="Foreground" Value="{DynamicResource Brush.AccentText}" />
+                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding BatchFailed}" Value="True">
+                                            <Setter Property="Foreground" Value="{DynamicResource Brush.Danger}" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
+                        <Grid Margin="0,14,0,0">
+                            <Grid.ColumnDefinitions><ColumnDefinition /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                            <Button Style="{StaticResource PrimaryButton}" Command="{Binding StartCommand}" Content="{Binding StartLabel}" Padding="11"
+                                    AutomationProperties.Name="Start conversion" />
+                            <Button Grid.Column="1" Content="Folder" Style="{StaticResource OutlineButton}" FontSize="14" Padding="14,11" Margin="8,0,0,0"
+                                    Command="{Binding OpenOutputFolderCommand}" ToolTip="Show the output (or where it will be saved)" />
+                        </Grid>
+                        <Button Content="Cancel this batch" Style="{StaticResource SubtleButton}" FontSize="12" HorizontalAlignment="Left" Margin="0,8,0,0"
+                                Command="{Binding CancelBatchCommand}"
+                                Visibility="{Binding LastBatch.IsCompleted, Converter={StaticResource BoolToVisibility}, ConverterParameter=Invert, FallbackValue=Collapsed}" />
+                        <TextBlock Text="{Binding StatusMessage}" Style="{StaticResource Text.Caption}" TextWrapping="Wrap" Margin="0,10,0,0"
+                                   Visibility="{Binding StatusMessage, Converter={StaticResource NullToVisibility}}" />
+                        <Button Content="Open batch view" Command="{Binding ShowBatchCommand}" Cursor="Hand" Margin="0,10,0,0" HorizontalAlignment="Left"
+                                Foreground="{DynamicResource Brush.AccentText}" FontSize="13">
+                            <Button.Template>
+                                <ControlTemplate TargetType="Button"><ContentPresenter /></ControlTemplate>
+                            </Button.Template>
+                        </Button>
+                    </StackPanel>
+                </Border>
+
+                <!-- Where to save -->
+                <Border Style="{StaticResource Card}" Padding="16" Margin="0,12,0,0">
+                    <StackPanel>
+                        <TextBlock Text="Save to" Style="{StaticResource Text.Subtitle}" FontSize="14" Margin="0,0,0,8" />
                         <RadioButton Content="Beside the original files" IsChecked="{Binding SaveBesideOriginal}" GroupName="Output" Margin="0,0,0,6" />
-                        <DockPanel>
-                            <RadioButton Content="Folder:" GroupName="Output" VerticalAlignment="Center" Margin="0,0,8,0"
-                                         IsChecked="{Binding SaveBesideOriginal, Converter={StaticResource InverseBool}}" />
-                            <Button DockPanel.Dock="Right" Content="Browse…" Margin="8,0,0,0" Command="{Binding BrowseOutputFolderCommand}" />
+                        <RadioButton Content="Folder:" GroupName="Output" IsChecked="{Binding SaveBesideOriginal, Converter={StaticResource InverseBool}}" />
+                        <DockPanel Margin="0,6,0,0">
+                            <Button DockPanel.Dock="Right" Content="Browse…" Style="{StaticResource OutlineButton}" Margin="8,0,0,0" Command="{Binding BrowseOutputFolderCommand}" />
                             <TextBox Text="{Binding OutputFolder}" IsEnabled="{Binding SaveBesideOriginal, Converter={StaticResource InverseBool}}"
-                                     AutomationProperties.Name="Output folder" />
+                                     FontFamily="{StaticResource MonoFont}" FontSize="12" AutomationProperties.Name="Output folder" />
                         </DockPanel>
                         <TextBlock Text="If a file with the same name exists" Style="{StaticResource OptionLabel}" />
                         <ComboBox ItemsSource="{Binding CollisionChoices}" DisplayMemberPath="Label" SelectedValuePath="Value"
-                                  SelectedValue="{Binding Collision}" Width="280" HorizontalAlignment="Left" AutomationProperties.Name="Name collision" />
+                                  SelectedValue="{Binding Collision}" AutomationProperties.Name="Name collision" />
                         <TextBlock Text="Original files are never overwritten." Style="{StaticResource Text.Caption}" Margin="0,6,0,0" />
                     </StackPanel>
                 </Border>
 
-                <DockPanel Margin="0,16,0,8">
-                    <Button DockPanel.Dock="Left" Style="{StaticResource PrimaryButton}" Command="{Binding StartCommand}" Padding="26,10"
-                            AutomationProperties.Name="Start conversion">
-                        <StackPanel Orientation="Horizontal">
-                            <TextBlock Text="&#xE768;" FontFamily="{StaticResource IconFont}" FontSize="13" VerticalAlignment="Center" Margin="0,0,8,0" />
-                            <TextBlock Text="Start conversion" />
-                        </StackPanel>
-                    </Button>
-                    <TextBlock Text="{Binding StatusMessage}" Style="{StaticResource Text.Secondary}" VerticalAlignment="Center" Margin="16,0,0,0" />
-                </DockPanel>
+                <!-- Save as preset -->
+                <Border Style="{StaticResource Card}" Padding="16" Margin="0,12,0,0" Visibility="{Binding HasFiles, Converter={StaticResource BoolToVisibility}}">
+                    <StackPanel>
+                        <TextBlock Text="Save as preset" Style="{StaticResource Text.Subtitle}" FontSize="14" />
+                        <TextBlock Text="Keeps this format and these options for one-click use and for watch folders." Style="{StaticResource Text.Caption}"
+                                   TextWrapping="Wrap" Margin="0,4,0,8" />
+                        <DockPanel>
+                            <Button DockPanel.Dock="Right" Content="Save" Style="{StaticResource OutlineButton}" Margin="8,0,0,0" Command="{Binding SaveAsPresetCommand}" />
+                            <TextBox Text="{Binding PresetName, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="Preset name"
+                                     ToolTip="Preset name (optional)" />
+                        </DockPanel>
+                    </StackPanel>
+                </Border>
             </StackPanel>
         </ScrollViewer>
-
-        <!-- Right: queue -->
-        <Border Grid.Column="2" Style="{StaticResource Card}" Padding="0">
-            <DockPanel>
-                <StackPanel DockPanel.Dock="Top" Margin="16,14,10,8">
-                    <TextBlock Text="Queue" Style="{StaticResource Text.Subtitle}" />
-                    <WrapPanel Margin="0,6,0,0">
-                        <Button Content="Pause waiting" Style="{StaticResource SubtleButton}" FontSize="12" Padding="8,4" Command="{Binding PauseAllCommand}" />
-                        <Button Content="Resume" Style="{StaticResource SubtleButton}" FontSize="12" Padding="8,4" Command="{Binding ResumeAllCommand}" />
-                        <Button Content="Cancel all" Style="{StaticResource SubtleButton}" FontSize="12" Padding="8,4" Command="{Binding CancelAllCommand}" />
-                        <Button Content="Clear finished" Style="{StaticResource SubtleButton}" FontSize="12" Padding="8,4" Command="{Binding ClearFinishedCommand}" />
-                    </WrapPanel>
-                </StackPanel>
-                <Grid>
-                    <TextBlock Text="Conversions you start appear here." Style="{StaticResource Text.Secondary}" Margin="16,8"
-                               Visibility="{Binding HasJobs, Converter={StaticResource BoolToVisibility}, ConverterParameter=Invert}" />
-                    <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
-                        <ItemsControl ItemsSource="{Binding Jobs}" Margin="8,0,8,8" Focusable="False" AutomationProperties.Name="Conversion queue">
-                            <ItemsControl.ItemTemplate>
-                                <DataTemplate>
-                                    <Border Margin="0,0,0,6" Padding="10,8" CornerRadius="8" Background="{DynamicResource Brush.SurfaceAlt}">
-                                        <Grid>
-                                            <Grid.ColumnDefinitions>
-                                                <ColumnDefinition Width="24" />
-                                                <ColumnDefinition Width="*" />
-                                                <ColumnDefinition Width="Auto" />
-                                            </Grid.ColumnDefinitions>
-                                            <TextBlock Text="{Binding Status, Converter={StaticResource JobStatusGlyph}}" Style="{StaticResource Glyph}"
-                                                       VerticalAlignment="Top" Margin="0,3,0,0" HorizontalAlignment="Left"
-                                                       Foreground="{Binding Status, Converter={StaticResource JobStatusBrush}}" />
-                                            <StackPanel Grid.Column="1">
-                                                <TextBlock Text="{Binding Title}" Style="{StaticResource Text.Body}" FontSize="13" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis"
-                                                           ToolTip="{Binding Title}" />
-                                                <TextBlock Style="{StaticResource Text.Caption}" TextWrapping="Wrap">
-                                                    <Run Text="{Binding Status, Converter={StaticResource JobStatusText}, Mode=OneWay}"
-                                                         Foreground="{Binding Status, Converter={StaticResource JobStatusBrush}}" /><Run Text="  " /><Run Text="{Binding Note, Mode=OneWay}" />
-                                                </TextBlock>
-                                                <TextBlock Text="{Binding Error}" Style="{StaticResource Text.Caption}" Foreground="{DynamicResource Brush.Danger}" TextWrapping="Wrap"
-                                                           Visibility="{Binding CanRetry, Converter={StaticResource BoolToVisibility}}" ToolTip="{Binding TechnicalDetail}" />
-                                                <ProgressBar Style="{StaticResource SlimProgress}" Margin="0,6,0,2" Maximum="100"
-                                                             Value="{Binding Progress, Converter={StaticResource ProgressPercent}}"
-                                                             IsIndeterminate="{Binding Progress, Converter={StaticResource IsNegative}}"
-                                                             Visibility="{Binding IsActive, Converter={StaticResource BoolToVisibility}}" />
-                                            </StackPanel>
-                                            <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Top" Margin="4,0,0,0">
-                                                <Button Content="&#xE769;" Style="{StaticResource IconButton}" ToolTip="Pause" Width="28" Height="28"
-                                                        Visibility="{Binding CanPause, Converter={StaticResource BoolToVisibility}}"
-                                                        Command="{Binding DataContext.PauseJobCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" CommandParameter="{Binding}" />
-                                                <Button Content="&#xE768;" Style="{StaticResource IconButton}" ToolTip="Resume" Width="28" Height="28"
-                                                        Visibility="{Binding CanResume, Converter={StaticResource BoolToVisibility}}"
-                                                        Command="{Binding DataContext.ResumeJobCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" CommandParameter="{Binding}" />
-                                                <Button Content="&#xE711;" Style="{StaticResource IconButton}" ToolTip="Cancel" Width="28" Height="28"
-                                                        Visibility="{Binding CanCancel, Converter={StaticResource BoolToVisibility}}"
-                                                        Command="{Binding DataContext.CancelJobCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" CommandParameter="{Binding}" />
-                                                <Button Content="&#xE72C;" Style="{StaticResource IconButton}" ToolTip="Retry" Width="28" Height="28"
-                                                        Visibility="{Binding CanRetry, Converter={StaticResource BoolToVisibility}}"
-                                                        Command="{Binding DataContext.RetryJobCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" CommandParameter="{Binding}" />
-                                                <Button Content="&#xE8B7;" Style="{StaticResource IconButton}" ToolTip="Show in folder" Width="28" Height="28"
-                                                        Visibility="{Binding IsFinished, Converter={StaticResource BoolToVisibility}}"
-                                                        Command="{Binding DataContext.RevealJobCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" CommandParameter="{Binding}" />
-                                                <Button Content="&#xE74D;" Style="{StaticResource IconButton}" ToolTip="Remove from list" Width="28" Height="28"
-                                                        Visibility="{Binding IsFinished, Converter={StaticResource BoolToVisibility}}"
-                                                        Command="{Binding DataContext.RemoveJobCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" CommandParameter="{Binding}" />
-                                            </StackPanel>
-                                        </Grid>
-                                    </Border>
-                                </DataTemplate>
-                            </ItemsControl.ItemTemplate>
-                        </ItemsControl>
-                    </ScrollViewer>
-                </Grid>
-            </DockPanel>
-        </Border>
     </Grid>
 </UserControl>

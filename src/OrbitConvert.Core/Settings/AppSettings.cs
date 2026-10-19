@@ -1,4 +1,6 @@
+using OrbitConvert.Core.Automation;
 using OrbitConvert.Core.Conversion;
+using OrbitConvert.Core.Presets;
 using OrbitConvert.Core.Tools;
 
 namespace OrbitConvert.Core.Settings;
@@ -20,10 +22,10 @@ public enum HotkeyModifiers
 public sealed class HotkeySettings
 {
     public bool Enabled { get; set; } = true;
-    public HotkeyModifiers Modifiers { get; set; } = HotkeyModifiers.Control | HotkeyModifiers.Alt;
+    public HotkeyModifiers Modifiers { get; set; } = HotkeyModifiers.Windows | HotkeyModifiers.Shift;
 
-    /// <summary>A virtual-key name such as "O" or "F9".</summary>
-    public string Key { get; set; } = "O";
+    /// <summary>A virtual-key name such as "C" or "F9".</summary>
+    public string Key { get; set; } = "C";
 
     public override string ToString()
     {
@@ -56,6 +58,9 @@ public sealed class AppSettings
     public bool ShakeToConvertEnabled { get; set; }
 
     public bool NotificationsEnabled { get; set; } = true;
+
+    /// <summary>Accessibility: animations fade instead of scaling.</summary>
+    public bool ReduceMotion { get; set; }
     public bool CloseRadialAfterSuccess { get; set; } = true;
     public bool StartMinimizedToTray { get; set; }
     public bool RunInBackgroundWhenClosed { get; set; } = true;
@@ -71,6 +76,12 @@ public sealed class AppSettings
     public int MaxParallelJobs { get; set; } = Math.Clamp(Environment.ProcessorCount / 4, 1, 4);
 
     public ConversionOptions Defaults { get; set; } = new();
+
+    /// <summary>Saved conversions. Starred ones appear in the Orbit Menu.</summary>
+    public List<ConversionPreset> Presets { get; set; } = BuiltInPresets.Create();
+
+    /// <summary>Folder automation; every watcher starts disabled.</summary>
+    public List<WatchFolder> Watchers { get; set; } = [];
 
     /// <summary>User-specified executable paths that override automatic discovery.</summary>
     public Dictionary<ExternalTool, string> ToolPaths { get; set; } = [];

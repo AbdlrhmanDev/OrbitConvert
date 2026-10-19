@@ -77,7 +77,9 @@ public partial class App : Application, IMainWindowHost
 
         var settings = _services.GetRequiredService<ISettingsStore>();
         _services.GetRequiredService<ThemeManager>().Apply(settings.Current.Theme);
-        _services.GetRequiredService<TempWorkspaceProvider>().CleanupStale(TimeSpan.FromDays(1));
+        // Stale-workspace cleanup can touch many files after a crash. Keep it off the UI thread so
+        // the main window and Explorer context-menu activation are never delayed by disk cleanup.
+        _ = Task.Run(() => _services.GetRequiredService<TempWorkspaceProvider>().CleanupStale(TimeSpan.FromDays(1)));
 
         var coordinator = _services.GetRequiredService<ConversionCoordinator>();
         var radial = _services.GetRequiredService<RadialMenuService>();
@@ -95,6 +97,8 @@ public partial class App : Application, IMainWindowHost
         };
         notifications.ShowTrayIcon(() => activation.IsDropZoneVisible);
         activation.Start();
+        // Folder automation: only watchers the user turned on are active.
+        _services.GetRequiredService<AutomationService>().Start();
 
         _instance.MessageReceived += (_, message) => Dispatcher.BeginInvoke(() => Handle(message.Command, message.Files));
         _instance.StartListening();
@@ -142,12 +146,20 @@ public partial class App : Application, IMainWindowHost
         services.AddSingleton<DialogService>();
         services.AddSingleton<NotificationService>();
         services.AddSingleton<ConversionCoordinator>();
+        services.AddSingleton<ImageEditorService>();
         services.AddSingleton<RadialMenuService>();
+        services.AddSingleton(sp => new Lazy<RadialMenuService>(() => sp.GetRequiredService<RadialMenuService>()));
         services.AddSingleton<ExplorerSelection>();
         services.AddSingleton<ActivationService>();
+        services.AddSingleton<PresetRunner>();
+        services.AddSingleton<AutomationService>();
         services.AddSingleton<HomeViewModel>();
         services.AddSingleton<ConvertViewModel>();
+        services.AddSingleton<BatchViewModel>();
         services.AddSingleton<ToolsViewModel>();
+        services.AddSingleton<AutomationViewModel>();
+        services.AddSingleton<PresetsViewModel>();
+        services.AddSingleton(sp => new Lazy<PresetsViewModel>(() => sp.GetRequiredService<PresetsViewModel>()));
         services.AddSingleton<HistoryViewModel>();
         services.AddSingleton<SettingsViewModel>();
         services.AddSingleton<MainViewModel>();
@@ -194,7 +206,7 @@ public partial class App : Application, IMainWindowHost
     {
         if (_mainWindow is null)
         {
-            _mainWindow = new MainWindow(_services!.GetRequiredService<MainViewModel>());
+            _mainWindow = new MainWindow(_services!.GetRequiredService<MainViewModel>(), _services!.GetRequiredService<ThemeManager>());
             _mainWindow.Closing += OnMainWindowClosing;
         }
         if (!_mainWindow.IsVisible)

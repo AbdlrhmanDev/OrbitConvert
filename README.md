@@ -29,12 +29,12 @@ No account. No uploads. No telemetry.
 
 ## Features
 
-- **Radial menu** near the cursor that shows only the formats your files can actually become, with
+- **Orbit Menu**: a radial menu near the cursor that shows only the formats your files can actually become, with
   live progress and a success/failure state. Keyboard: arrows/Tab to move, Enter to convert, 1–9 to
   pick, Esc to close.
 - **Four ways to open it**
   - **File Explorer context menu**: “Convert with OrbitConvert” (and a **Send to** entry).
-  - **Global shortcut** (default <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>O</kbd>) for the files selected
+  - **Global shortcut** (default <kbd>Win</kbd>+<kbd>Shift</kbd>+<kbd>C</kbd>) for the files selected
     in the active File Explorer window.
   - **Floating drop zone**: drag files onto a small always-on-top circle.
   - **Shake while dragging** *(experimental, off by default)*: shows a temporary drop target.
@@ -45,6 +45,17 @@ No account. No uploads. No telemetry.
 - **Batch processing** with bounded parallelism, per-file or shared options, pause/resume for waiting
   jobs, cancel, retry and reorder (for PDF merging).
 - **PDF tools**: merge, split, extract pages, rotate, compress, images → PDF, PDF → images, metadata.
+- **Image tools**: crop (free, 1:1, 16:9, 4:3, 3:4) and add background (gradient, padding, rounded
+  corners, shadow) in small floating editors; shrink in the same format; strip EXIF/GPS from JPG and PNG
+  without re-encoding. After a crop, the Orbit Menu reopens on the new file so you can keep going.
+- **Presets**: six built-ins (e.g. "Optimize for web", "Video for WhatsApp") plus your own, saved from
+  the Convert page. Starred presets appear in the Orbit Menu for files they apply to.
+- **Watch folders** *(off until you turn one on)*: convert new files in a folder with a preset. Files
+  are processed only after they stop growing; temporary downloads and OrbitConvert's own outputs are
+  ignored.
+- **Search** (<kbd>Ctrl</kbd>+<kbd>K</kbd>) across pages, tools, presets and recent history.
+- **Measured size estimates**: for images, the Convert page encodes the first file in memory with your
+  settings and shows the real output size before you start.
 - **Archive tools**: create ZIP/7z, safe extraction (path-traversal and zip-bomb protection), integrity
   checks.
 - **Safe by default**: originals are never overwritten; outputs appear atomically; failed or canceled
@@ -56,8 +67,10 @@ No account. No uploads. No telemetry.
 | Home | Convert |
 |---|---|
 | ![Home screen](assets/screenshots/home.png) | ![Convert screen with images and options](assets/screenshots/convert.png) |
-| **PDF & archive tools** | **Settings** |
-| ![Tools screen](assets/screenshots/tools.png) | ![Settings screen](assets/screenshots/settings.png) |
+| **PDF tools** | **Presets** |
+| ![PDF tools screen](assets/screenshots/tools.png) | ![Presets screen](assets/screenshots/presets.png) |
+| **Settings** | |
+| ![Settings screen](assets/screenshots/settings.png) | |
 
 All screenshots are of the real application (dark theme, Windows 11).
 
@@ -116,7 +129,7 @@ program, shortcuts and Explorer integration. Your settings, history and download
 ## Use it
 
 - **From File Explorer**: right-click files → *Convert with OrbitConvert* (Windows 11: *Show more
-  options* first), or *Send to → OrbitConvert*, or select files and press <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>O</kbd>.
+  options* first), or *Send to → OrbitConvert*, or select files and press <kbd>Win</kbd>+<kbd>Shift</kbd>+<kbd>C</kbd>.
 - **From the app**: drop files on the window, pick a target, adjust options, press *Start conversion*.
 - **Batch**: add many files; targets shown are the ones all files share. Files already in the target
   format are skipped.

@@ -72,6 +72,14 @@ public sealed class PdfToolsConverter : IConverter
 
     public RouteAvailability GetAvailability(ConversionRoute route) => RouteAvailability.Available;
 
+    public void ValidateOptions(ConversionRoute route, IReadOnlyList<InputFile> inputs, ConversionOptions options)
+    {
+        if (route.TargetKey == ExtractKey && string.IsNullOrWhiteSpace(options.Pdf.PageRange))
+        {
+            throw new ConversionException("Enter the pages to extract, for example \"1-3, 5\".");
+        }
+    }
+
     public Task<IReadOnlyList<string>> ExecuteAsync(ConversionContext context, CancellationToken cancellationToken)
     {
         return context.Route.TargetKey switch
@@ -397,9 +405,17 @@ public sealed class PdfToolsConverter : IConverter
         var options = new PDFtoImage.RenderOptions(Dpi: dpi, WithAnnotations: true, WithFormFill: true);
 
         var done = 0;
+        var reducedPages = 0;
         foreach (var page in pages)
         {
             ct.ThrowIfCancellationRequested();
+            pdf.Position = 0;
+            var pageDpi = SafeDpi(PDFtoImage.Conversion.GetPageSize(pdf, page, leaveOpen: true), dpi);
+            if (pageDpi < dpi)
+            {
+                reducedPages++;
+            }
+            var pageOptions = options with { Dpi = pageDpi };
             var name = single ? baseName + format.PrimaryExtension : $"{baseName}-page-{(page + 1).ToString().PadLeft(digits, '0')}{format.PrimaryExtension}";
             var target = Path.Combine(folder, name);
             pdf.Position = 0;
@@ -408,13 +424,13 @@ public sealed class PdfToolsConverter : IConverter
                 switch (format.Id)
                 {
                     case "png":
-                        PDFtoImage.Conversion.SavePng(target, pdf, page, leaveOpen: true, options: options);
+                        PDFtoImage.Conversion.SavePng(target, pdf, page, leaveOpen: true, options: pageOptions);
                         break;
                     case "jpeg":
-                        PDFtoImage.Conversion.SaveJpeg(target, pdf, page, leaveOpen: true, options: options with { BackgroundColor = SkiaSharp.SKColors.White });
+                        PDFtoImage.Conversion.SaveJpeg(target, pdf, page, leaveOpen: true, options: pageOptions with { BackgroundColor = SkiaSharp.SKColors.White });
                         break;
                     default:
-                        PDFtoImage.Conversion.SaveWebp(target, pdf, page, leaveOpen: true, options: options);
+                        PDFtoImage.Conversion.SaveWebp(target, pdf, page, leaveOpen: true, options: pageOptions);
                         break;
                 }
             }
@@ -425,11 +441,32 @@ public sealed class PdfToolsConverter : IConverter
             context.ReportProgress((double)++done / pages.Count);
         }
 
-        context.ResultNote = single ? null : $"{pages.Count} images at {dpi} dpi";
+        context.ResultNote = (single ? "" : $"{pages.Count} images at {dpi} dpi")
+            + (reducedPages > 0 ? $"{(single ? "" : "; ")}{reducedPages} oversized page(s) rendered at lower resolution" : "");
+        if (context.ResultNote.Length == 0)
+        {
+            context.ResultNote = null;
+        }
         return single ? [Directory.EnumerateFiles(folder).Single(f => f.EndsWith(format.PrimaryExtension, StringComparison.OrdinalIgnoreCase))] : [folder];
     }
 
 #pragma warning restore CA1416
+
+    /// <summary>Largest rendered side and area; beyond this a page is rendered at a lower DPI.</summary>
+    private const double MaxSidePixels = 10_000, MaxPixels = 64_000_000;
+
+    /// <summary>
+    /// Pages can be enormous (posters, or images saved with a tiny density), and rendering them at the
+    /// requested DPI would exhaust memory. The DPI is lowered just enough to stay within safe limits.
+    /// </summary>
+    internal static int SafeDpi(System.Drawing.SizeF pagePoints, int requestedDpi)
+    {
+        var widthIn = Math.Max(1e-3, pagePoints.Width / 72.0);
+        var heightIn = Math.Max(1e-3, pagePoints.Height / 72.0);
+        var bySide = MaxSidePixels / Math.Max(widthIn, heightIn);
+        var byArea = Math.Sqrt(MaxPixels / (widthIn * heightIn));
+        return Math.Max(1, (int)Math.Floor(Math.Min(requestedDpi, Math.Min(bySide, byArea))));
+    }
 
     private static string DescribeRenderError(Exception ex) =>
         ex.Message.Contains("password", StringComparison.OrdinalIgnoreCase)

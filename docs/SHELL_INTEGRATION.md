@@ -7,7 +7,7 @@ four activation modes built on documented mechanisms.
 | Mode | Mechanism | Default | Notes |
 |---|---|---|---|
 | A. Drop zone | A top-most WPF window that is an ordinary OLE drop target | Off | Reliable: Explorer performs a normal drag-and-drop onto a window. Drag the circle to move it |
-| B. Global shortcut | `RegisterHotKey` + `Shell.Application` automation to read the selection of the foreground Explorer window | On (<kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>O</kbd>) | Works for File Explorer windows (including Windows 11 tabs); not for the desktop or third-party file managers |
+| B. Global shortcut | `RegisterHotKey` + `Shell.Application` automation to read the selection of the foreground Explorer window | On (<kbd>Win</kbd>+<kbd>Shift</kbd>+<kbd>C</kbd>) | Works for File Explorer windows (including Windows 11 tabs); not for the desktop or third-party file managers |
 | C. Context menu | Static verb under `HKCU\Software\Classes\*\shell\OrbitConvert` + a **Send to** shortcut | On (installer feature) | No admin rights; nothing loaded into Explorer |
 | D. Shake while dragging | Low-level mouse hook (`WH_MOUSE_LL`) in OrbitConvert's own process | Off, experimental | See below |
 
@@ -91,7 +91,7 @@ check these by hand and note the Windows version, display configuration and resu
 - [ ] Uninstall → the entries disappear.
 
 **Shortcut (B)**
-- [ ] Select files in an Explorer window and press <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>O</kbd> → radial menu for those files.
+- [ ] Select files in an Explorer window and press <kbd>Win</kbd>+<kbd>Shift</kbd>+<kbd>C</kbd> → radial menu for those files.
 - [ ] Windows 11 with two Explorer tabs → the active tab's selection is used.
 - [ ] Nothing selected / desktop focused → a notification explains what to do.
 - [ ] Assign a shortcut used by another app → Settings reports the conflict.

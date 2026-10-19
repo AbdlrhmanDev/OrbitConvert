@@ -156,6 +156,20 @@ public class ConversionCapabilityRegistryTests
     }
 
     [Fact]
+    public void CreatePlans_validates_options_before_returning_a_job()
+    {
+        var c = new FakeConverter
+        {
+            OptionsValidation = (_, _, _) => throw new ConversionException("Required option is missing."),
+        }.Route("pdf-extract", KnownFormats.Pdf, RouteKind.Transform, KnownFormats.Pdf);
+
+        var ex = Assert.Throws<ConversionException>(() =>
+            Registry(c).CreatePlans([In(KnownFormats.Pdf)], "pdf-extract", new(), OutputSettings.BesideOriginal, out _));
+
+        Assert.Equal("Required option is missing.", ex.Message);
+    }
+
+    [Fact]
     public void Analyze_identifies_by_content_and_reports_missing_files()
     {
         using var dir = new TempDir();

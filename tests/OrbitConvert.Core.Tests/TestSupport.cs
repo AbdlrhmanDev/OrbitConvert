@@ -56,9 +56,13 @@ public sealed class FakeConverter : IConverter
     public List<ConversionRoute> RouteList { get; } = [];
     public IReadOnlyList<ConversionRoute> Routes => RouteList;
     public Func<ConversionRoute, RouteAvailability> Availability { get; set; } = _ => RouteAvailability.Available;
+    public Action<ConversionRoute, IReadOnlyList<InputFile>, ConversionOptions>? OptionsValidation { get; set; }
     public Func<ConversionContext, CancellationToken, Task<IReadOnlyList<string>>>? Behavior { get; set; }
 
     public RouteAvailability GetAvailability(ConversionRoute route) => Availability(route);
+
+    public void ValidateOptions(ConversionRoute route, IReadOnlyList<InputFile> inputs, ConversionOptions options) =>
+        OptionsValidation?.Invoke(route, inputs, options);
 
     public Task<IReadOnlyList<string>> ExecuteAsync(ConversionContext context, CancellationToken cancellationToken) =>
         Behavior is null ? WritePng(context) : Behavior(context, cancellationToken);
