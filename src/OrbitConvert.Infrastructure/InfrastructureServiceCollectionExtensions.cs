@@ -44,6 +44,7 @@ public static class InfrastructureServiceCollectionExtensions
         services.AddSingleton(_ => new HttpClient { Timeout = TimeSpan.FromMinutes(30) });
         services.AddSingleton<DependencyInstaller>();
         services.AddSingleton<UpdateChecker>();
+        services.AddSingleton<UpdateInstaller>();
         return services;
     }
 }

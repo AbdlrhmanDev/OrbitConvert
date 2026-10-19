@@ -41,7 +41,7 @@ public sealed class ImageMagickConverter : IConverter
             Output = o.Format,
             Priority = o.Priority,
             Description = o.Format == KnownFormats.Pdf ? "Image as a PDF page" : $"Convert to {o.Format.DisplayName}",
-        }).ToList();
+        }).Concat(ImageActions.Routes()).ToList();
     }
 
     public string Id => "imagemagick";
@@ -52,7 +52,11 @@ public sealed class ImageMagickConverter : IConverter
 
     public RouteAvailability GetAvailability(ConversionRoute route)
     {
-        var output = ToMagick(route.Output!);
+        if (route.Output is null)
+        {
+            return RouteAvailability.Available; // same-format actions
+        }
+        var output = ToMagick(route.Output);
         if (!Coders.Value.TryGetValue(output, out var info) || !info.SupportsWriting)
         {
             return RouteAvailability.Unavailable($"The bundled ImageMagick cannot write {route.Output!.Label}.");
@@ -64,7 +68,12 @@ public sealed class ImageMagickConverter : IConverter
         Coders.Value.TryGetValue(ToMagick(format), out var info) && info.SupportsReading;
 
     public Task<IReadOnlyList<string>> ExecuteAsync(ConversionContext context, CancellationToken cancellationToken) =>
-        Task.Run<IReadOnlyList<string>>(() => [Convert(context, cancellationToken)], cancellationToken);
+        Task.Run<IReadOnlyList<string>>(() => context.Route.TargetKey switch
+        {
+            ImageActions.ShrinkKey => [ImageActions.Shrink(context, cancellationToken)],
+            ImageActions.StripKey => [ImageActions.Strip(context, cancellationToken)],
+            _ => [Convert(context, cancellationToken)],
+        }, cancellationToken);
 
     private static string Convert(ConversionContext context, CancellationToken ct)
     {
@@ -131,6 +140,56 @@ public sealed class ImageMagickConverter : IConverter
         }
 
         return outPath;
+    }
+
+    /// <summary>Reads the pixel size from the header without decoding the image, or null.</summary>
+    public static (uint Width, uint Height)? ReadDimensions(InputFile input)
+    {
+        if (input.Format is not { } format || !CanRead(format))
+        {
+            return null;
+        }
+        try
+        {
+            var info = new MagickImageInfo();
+            info.Read(input.Path, new MagickReadSettings { Format = ToMagick(format) });
+            return (info.Width, info.Height);
+        }
+        catch (Exception ex) when (ex is MagickException or IOException)
+        {
+            return null;
+        }
+    }
+
+    /// <summary>
+    /// Encodes the first frame in memory with the same processing as a real conversion and returns
+    /// the byte count, so the UI can show a measured (not guessed) output size. Returns null when
+    /// the file cannot be read or the format cannot be written.
+    /// </summary>
+    public static long? EstimateOutputSize(InputFile input, FileFormat output, ImageOptions options, CancellationToken ct)
+    {
+        if (input.Format is not { } inputFormat || !CanRead(inputFormat))
+        {
+            return null;
+        }
+        try
+        {
+            using var frames = new MagickImageCollection();
+            frames.Read(input.Path, new MagickReadSettings { Format = ToMagick(inputFormat) });
+            ct.ThrowIfCancellationRequested();
+            using var image = PickFrame(frames, inputFormat).Clone();
+            Process(image, output, options);
+            ct.ThrowIfCancellationRequested();
+            if (output == KnownFormats.Ico)
+            {
+                PrepareIcon(image);
+            }
+            return image.ToByteArray(ToMagick(output)).LongLength;
+        }
+        catch (Exception ex) when (ex is MagickException or ConversionException or ArgumentException)
+        {
+            return null;
+        }
     }
 
     private static void Process(IMagickImage<byte> image, FileFormat output, ImageOptions options)

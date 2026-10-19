@@ -95,6 +95,17 @@ public class PdfToolsTests : IDisposable
     }
 
     [Fact]
+    public void Extract_rejects_missing_page_range_before_queueing()
+    {
+        var route = _converter.Routes.Single(r => r.TargetKey == PdfToolsConverter.ExtractKey);
+
+        var ex = Assert.Throws<ConversionException>(() =>
+            _converter.ValidateOptions(route, [], new ConversionOptions()));
+
+        Assert.Contains("Enter the pages", ex.Message);
+    }
+
+    [Fact]
     public async Task Rotates_selected_pages_without_touching_the_original()
     {
         var input = MakePdf("doc.pdf", 3);
@@ -226,5 +237,21 @@ public class PdfToolsTests : IDisposable
         Assert.Equal("Quarterly report", info.Title);
         Assert.Equal("Ada", info.Author);
         Assert.Equal(2, info.PageSizes.Count);
+    }
+
+    [Fact]
+    public void Page_size_is_reported_in_points_and_huge_pages_get_a_safe_dpi()
+    {
+        using (var pdf = File.OpenRead(MakePdf("sized.pdf", 1)))
+        {
+            var size = PDFtoImage.Conversion.GetPageSize(pdf, 0, leaveOpen: true);
+            Assert.Equal(300, Math.Round(size.Width));
+            Assert.Equal(400, Math.Round(size.Height));
+        }
+
+        Assert.Equal(150, PdfToolsConverter.SafeDpi(new System.Drawing.SizeF(612, 792), 150)); // Letter: untouched
+        var poster = PdfToolsConverter.SafeDpi(new System.Drawing.SizeF(14400, 14400), 150);   // 200 x 200 in
+        Assert.InRange(poster, 1, 40);
+        Assert.True(200 * poster <= 10_000);
     }
 }

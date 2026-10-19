@@ -38,27 +38,21 @@ public sealed class ThemeManager
             _ => SystemUsesDarkTheme(),
         };
 
-        app.ThemeMode = theme switch
-        {
-            AppTheme.Dark => ThemeMode.Dark,
-            AppTheme.Light => ThemeMode.Light,
-            _ => ThemeMode.System,
-        };
+        app.ThemeMode = IsDark ? ThemeMode.Dark : ThemeMode.Light;
 
-        var dictionaries = app.Resources.MergedDictionaries;
-        var existing = dictionaries.FirstOrDefault(d => d.Source?.OriginalString.EndsWith("Light.xaml", StringComparison.OrdinalIgnoreCase) == true
-                                                     || d.Source?.OriginalString.EndsWith("Dark.xaml", StringComparison.OrdinalIgnoreCase) == true);
-        var replacement = new ResourceDictionary
+        var selectedTheme = new ResourceDictionary
         {
             Source = new Uri($"pack://application:,,,/OrbitConvert;component/Themes/{(IsDark ? "Dark" : "Light")}.xaml", UriKind.Absolute),
         };
-        if (existing is null)
+
+        // Put semantic theme values directly in the application's top-level dictionary.
+        // WPF's ThemeMode can rebuild framework theme dictionaries at runtime; replacing a
+        // merged dictionary alone may therefore leave custom controls on their previous palette.
+        // Top-level values have stable precedence and updating them invalidates every
+        // DynamicResource consumer immediately.
+        foreach (var key in selectedTheme.Keys)
         {
-            dictionaries.Add(replacement);
-        }
-        else
-        {
-            dictionaries[dictionaries.IndexOf(existing)] = replacement;
+            app.Resources[key] = selectedTheme[key];
         }
         Changed?.Invoke(this, EventArgs.Empty);
     }

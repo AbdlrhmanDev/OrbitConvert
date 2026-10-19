@@ -3,10 +3,14 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Microsoft.Extensions.Logging;
 using OrbitConvert.App.Converters;
+using System.Windows.Media;
+using System.Windows.Media.Imaging;
 using OrbitConvert.App.Services;
+using OrbitConvert.Converters.Images;
+using OrbitConvert.Converters.Pdf;
 using OrbitConvert.Core.Conversion;
 using OrbitConvert.Core.Formats;
-using OrbitConvert.Core.Queue;
+using OrbitConvert.Core.Presets;
 using OrbitConvert.Core.Settings;
 using OrbitConvert.Shell;
 
@@ -25,13 +29,65 @@ public sealed partial class StagedFileViewModel(InputFile input, ConversionOptio
     public string TypeName => Input.Format?.DisplayName ?? "Unknown type";
     public string Category => Input.Format?.Category.ToString() ?? "Other";
     public string? Warning => Input.Detection?.Warning;
+
+    /// <summary>How the type was identified: from the file content, or only from its extension.</summary>
+    public string SignatureText => Input.Detection?.Method switch
+    {
+        DetectionMethod.Signature => "content ✓",
+        DetectionMethod.TextHeuristic => "text · by extension",
+        DetectionMethod.Extension => "extension only",
+        _ => "unknown",
+    };
+
+    public bool SignatureVerified => Input.Detection?.Method == DetectionMethod.Signature;
+
+    [ObservableProperty] private string _dimensions = "—";
+    [ObservableProperty] private ImageSource? _preview;
+
+    private bool _detailsLoaded;
+
+    /// <summary>Loads pixel size and a small thumbnail in the background (images only).</summary>
+    public async Task LoadDetailsAsync()
+    {
+        if (_detailsLoaded || Input.Format?.Category != FormatCategory.Image)
+        {
+            return;
+        }
+        _detailsLoaded = true;
+        var size = await Task.Run(() => ImageMagickConverter.ReadDimensions(Input));
+        Dimensions = size is { } s ? $"{s.Width} × {s.Height}" : "—";
+        Preview = await Task.Run(() => LoadThumbnail(Input.Path));
+    }
+
+    private static ImageSource? LoadThumbnail(string path)
+    {
+        // WPF's own decoders cover JPG, PNG, BMP, GIF and TIFF; other formats keep the placeholder.
+        try
+        {
+            var bitmap = new BitmapImage();
+            bitmap.BeginInit();
+            bitmap.UriSource = new Uri(path);
+            bitmap.DecodePixelWidth = 176;
+            bitmap.CacheOption = BitmapCacheOption.OnLoad;
+            bitmap.CreateOptions = BitmapCreateOptions.IgnoreColorProfile;
+            bitmap.EndInit();
+            bitmap.Freeze();
+            return bitmap;
+        }
+        catch (Exception ex) when (ex is NotSupportedException or IOException or ArgumentException or InvalidOperationException
+                                       or System.Runtime.InteropServices.COMException or UnauthorizedAccessException)
+        {
+            return null;
+        }
+    }
 }
 
-public sealed class TargetViewModel(ConversionTarget target, FormatCategory? inputCategory)
+public sealed class TargetViewModel(ConversionTarget target, FormatCategory? inputCategory, FileFormat? singleInput = null)
 {
     public ConversionTarget Target { get; } = target;
     public string Key => Target.Key;
-    public string Label => Target.Label;
+    public string Label => RadialMenuViewModel.ShortLabel(Target);
+    public string Hint => Target.IsAvailable ? RadialMenuViewModel.HintFor(Target, singleInput) : "Unavailable";
     public string Category => (Target.Output?.Category ?? inputCategory)?.ToString() ?? "Other";
     public string? Glyph => RadialMenuViewModel.GlyphFor(Target);
     public bool IsAvailable => Target.IsAvailable;
@@ -52,37 +108,87 @@ public sealed partial class ConvertViewModel : ObservableObject
     private readonly DialogService _dialogs;
     private readonly ILogger<ConvertViewModel> _logger;
 
-    public ConvertViewModel(ConversionCoordinator coordinator, ISettingsStore settings, DialogService dialogs, ILogger<ConvertViewModel> logger)
+    private readonly Lazy<PresetsViewModel> _presets;
+    private CancellationTokenSource? _estimate;
+
+    public ConvertViewModel(ConversionCoordinator coordinator, ISettingsStore settings, DialogService dialogs, Lazy<PresetsViewModel> presets,
+        ILogger<ConvertViewModel> logger)
     {
         _coordinator = coordinator;
         _settings = settings;
         _dialogs = dialogs;
+        _presets = presets;
         _logger = logger;
         _sharedOptions = settings.Current.Defaults.Clone();
         _saveBesideOriginal = settings.Current.OutputLocation == OutputLocationMode.BesideOriginal;
         _outputFolder = settings.Current.CustomOutputFolder;
         _collision = settings.Current.Collision;
 
-        foreach (var job in coordinator.Queue.Jobs.Reverse())
-        {
-            Jobs.Add(job);
-        }
-        coordinator.Queue.JobAdded += (_, job) => Ui.Post(() => Jobs.Insert(0, job));
-        coordinator.Queue.JobRemoved += (_, job) => Ui.Post(() => Jobs.Remove(job));
         Files.CollectionChanged += (_, _) =>
         {
             OnPropertyChanged(nameof(HasFiles));
+            OnPropertyChanged(nameof(HasSeveralFiles));
+            OnPropertyChanged(nameof(PreviewFile));
+            OnPropertyChanged(nameof(OutputName));
+            OnPropertyChanged(nameof(LocationText));
             StartCommand.NotifyCanExecuteChanged();
+            SaveAsPresetCommand.NotifyCanExecuteChanged();
+            _ = PreviewFile?.LoadDetailsAsync();
         };
-        Jobs.CollectionChanged += (_, _) => OnPropertyChanged(nameof(HasJobs));
     }
+
+    public Action<Page>? Navigate { get; set; }
 
     public ObservableCollection<StagedFileViewModel> Files { get; } = [];
     public ObservableCollection<TargetViewModel> Targets { get; } = [];
-    public ObservableCollection<ConversionJob> Jobs { get; } = [];
 
     public bool HasFiles => Files.Count > 0;
-    public bool HasJobs => Jobs.Count > 0;
+    public bool HasSeveralFiles => Files.Count > 1;
+
+    /// <summary>The file shown in the preview card: the selected one, else the first.</summary>
+    public StagedFileViewModel? PreviewFile => SelectedFile ?? Files.FirstOrDefault();
+
+    /// <summary>The name the first output will get (before collision handling).</summary>
+    public string OutputName
+    {
+        get
+        {
+            var file = PreviewFile;
+            var target = SelectedTarget?.Target;
+            if (file is null || target is null)
+            {
+                return "—";
+            }
+            if (target.Kind == RouteKind.Combine && Files.Count > 1)
+            {
+                return $"{Files.Count} files → one {target.Output?.Label ?? target.Label}";
+            }
+            var stem = Path.GetFileNameWithoutExtension(file.Name);
+            return target.Output is { } output ? stem + output.PrimaryExtension : $"{stem} · {target.Label}";
+        }
+    }
+
+    public string LocationText => SaveBesideOriginal
+        ? "Beside original" + (PreviewFile is { } f ? " · " + f.Folder : "")
+        : string.IsNullOrWhiteSpace(OutputFolder) ? "Choose a folder" : OutputFolder!;
+
+    public string CollisionText => Collision switch
+    {
+        CollisionStrategy.Overwrite => "If the name exists: replace it",
+        CollisionStrategy.Skip => "If the name exists: skip the file",
+        _ => "If the name exists: add “(1)”",
+    };
+
+    public string StartLabel => SelectedTarget is { } t ? "Convert to " + t.Label : "Convert";
+
+    // Measured output size (images): the first file is encoded in memory with the current options.
+    [ObservableProperty] private string? _estimateText;
+
+    // Progress of the last batch started from this page.
+    [ObservableProperty] private ConversionBatch? _lastBatch;
+    [ObservableProperty] private string _batchStatus = "Ready";
+    [ObservableProperty] private bool _batchDone;
+    [ObservableProperty] private bool _batchFailed;
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(EditingOptions))]
@@ -132,6 +238,28 @@ public sealed partial class ConvertViewModel : ObservableObject
 
     public ConversionOptions EditingOptions => PerFileOptions && SelectedFile is not null ? SelectedFile.Options : SharedOptions;
 
+    public string? PdfPageRange
+    {
+        get => EditingOptions.Pdf.PageRange;
+        set
+        {
+            if (string.Equals(EditingOptions.Pdf.PageRange, value, StringComparison.Ordinal))
+            {
+                return;
+            }
+            EditingOptions.Pdf.PageRange = value;
+            OnPropertyChanged();
+            OnPropertyChanged(nameof(IsPageRangeMissing));
+            StartCommand.NotifyCanExecuteChanged();
+        }
+    }
+
+    public bool IsPageRangeRequired => SelectedTarget?.Key == PdfToolsConverter.ExtractKey;
+    public bool IsPageRangeMissing => IsPageRangeRequired && string.IsNullOrWhiteSpace(PdfPageRange);
+    public string PdfPagesHint => IsPageRangeRequired
+        ? "Pages to extract (required), for example 1-3, 5 or 8-."
+        : "Pages, for example 1-3, 5 or 8-. Empty means all pages.";
+
     public string OptionsScopeText => PerFileOptions
         ? SelectedFile is null ? "Select a file to edit its options" : $"Options for {SelectedFile.Name}"
         : "Options for all files";
@@ -171,13 +299,46 @@ public sealed partial class ConvertViewModel : ObservableObject
         new("Skip the file", CollisionStrategy.Skip),
     ];
 
+    partial void OnSaveBesideOriginalChanged(bool value) => OnPropertyChanged(nameof(LocationText));
+    partial void OnOutputFolderChanged(string? value) => OnPropertyChanged(nameof(LocationText));
+    partial void OnCollisionChanged(CollisionStrategy value) => OnPropertyChanged(nameof(CollisionText));
+
     partial void OnSelectedTargetChanged(TargetViewModel? value)
     {
+        OnPropertyChanged(nameof(OutputName));
+        OnPropertyChanged(nameof(StartLabel));
+        SaveAsPresetCommand.NotifyCanExecuteChanged();
+        BatchStatus = "Ready";
+        BatchDone = BatchFailed = false;
+        LastBatch = null;
+        ScheduleEstimate();
         UpdateOptionVisibility();
+        OnPropertyChanged(nameof(IsPageRangeRequired));
+        OnPropertyChanged(nameof(IsPageRangeMissing));
+        OnPropertyChanged(nameof(PdfPagesHint));
+        OnPropertyChanged(nameof(PdfPageRange));
         StartCommand.NotifyCanExecuteChanged();
     }
 
-    partial void OnSelectedFileChanged(StagedFileViewModel? value) => OnPropertyChanged(nameof(OptionsScopeText));
+    partial void OnSelectedFileChanged(StagedFileViewModel? value)
+    {
+        OnPropertyChanged(nameof(PreviewFile));
+        OnPropertyChanged(nameof(OutputName));
+        OnPropertyChanged(nameof(LocationText));
+        _ = PreviewFile?.LoadDetailsAsync();
+        ScheduleEstimate();
+        OnPropertyChanged(nameof(OptionsScopeText));
+        OnPropertyChanged(nameof(PdfPageRange));
+        OnPropertyChanged(nameof(IsPageRangeMissing));
+        StartCommand.NotifyCanExecuteChanged();
+    }
+
+    partial void OnSharedOptionsChanged(ConversionOptions value)
+    {
+        OnPropertyChanged(nameof(PdfPageRange));
+        OnPropertyChanged(nameof(IsPageRangeMissing));
+        StartCommand.NotifyCanExecuteChanged();
+    }
 
     partial void OnPerFileOptionsChanged(bool value)
     {
@@ -190,6 +351,9 @@ public sealed partial class ConvertViewModel : ObservableObject
             }
             SelectedFile ??= Files.FirstOrDefault();
         }
+        OnPropertyChanged(nameof(PdfPageRange));
+        OnPropertyChanged(nameof(IsPageRangeMissing));
+        StartCommand.NotifyCanExecuteChanged();
     }
 
     public async Task AddFilesAsync(IReadOnlyList<string> paths, string? targetKey = null)
@@ -226,9 +390,11 @@ public sealed partial class ConvertViewModel : ObservableObject
         Targets.Clear();
         var categories = inputs.Select(i => i.Format?.Category).Distinct().ToList();
         var inputCategory = categories.Count == 1 ? categories[0] : null;
+        var formats = inputs.Select(i => i.Format).Distinct().ToList();
+        var singleInput = formats.Count == 1 ? formats[0] : null;
         foreach (var t in targets)
         {
-            Targets.Add(new TargetViewModel(t, inputCategory));
+            Targets.Add(new TargetViewModel(t, inputCategory, singleInput));
         }
         SelectedTarget = Targets.FirstOrDefault(t => t.Key == previous && t.IsAvailable)
                          ?? Targets.FirstOrDefault(t => t.Key == previous)
@@ -318,12 +484,17 @@ public sealed partial class ConvertViewModel : ObservableObject
         }
     }
 
-    private bool CanStart() => Files.Count > 0 && SelectedTarget is { IsAvailable: true };
+    private bool CanStart() => Files.Count > 0 && SelectedTarget is { IsAvailable: true } && !IsPageRangeMissing;
 
     [RelayCommand(CanExecute = nameof(CanStart))]
     private void Start()
     {
         var target = SelectedTarget!;
+        if (IsPageRangeMissing)
+        {
+            StatusMessage = "Enter the pages to extract, for example 1-3, 5.";
+            return;
+        }
         if (!SaveBesideOriginal && string.IsNullOrWhiteSpace(OutputFolder))
         {
             StatusMessage = "Choose an output folder, or save beside the original files.";
@@ -349,11 +520,9 @@ public sealed partial class ConvertViewModel : ObservableObject
                 skipped = s.Count;
             }
 
-            _coordinator.Enqueue(plans, skipped, target.Label);
-            StatusMessage = $"Queued {plans.Count} conversion(s) to {target.Label}" + (skipped > 0 ? $"; {skipped} file(s) already in that format were skipped." : ".");
-            Files.Clear();
-            Targets.Clear();
-            SelectedTarget = null;
+            var batch = _coordinator.Enqueue(plans, skipped, target.Label);
+            StatusMessage = skipped > 0 ? $"{skipped} file(s) already in that format were skipped." : null;
+            Track(batch);
         }
         catch (ConversionException ex)
         {
@@ -373,42 +542,225 @@ public sealed partial class ConvertViewModel : ObservableObject
         OnPropertyChanged(nameof(EditingOptions));
     }
 
-    // Queue commands
-    [RelayCommand] private void CancelJob(ConversionJob job) => _coordinator.Queue.Cancel(job);
-    [RelayCommand] private void PauseJob(ConversionJob job) => _coordinator.Queue.Pause(job);
-    [RelayCommand] private void ResumeJob(ConversionJob job) => _coordinator.Queue.Resume(job);
-    [RelayCommand] private void RetryJob(ConversionJob job) => _coordinator.Queue.Retry(job);
-    [RelayCommand] private void RemoveJob(ConversionJob job) => _coordinator.Queue.Remove(job);
-    [RelayCommand] private void ClearFinished() => _coordinator.Queue.ClearFinished();
-    [RelayCommand] private void CancelAll() => _coordinator.Queue.CancelAll();
+    /// <summary>Follows a started batch so the output panel shows its real progress and result.</summary>
+    private void Track(ConversionBatch batch)
+    {
+        LastBatch = batch;
+        BatchDone = BatchFailed = false;
+        BatchStatus = batch.Jobs.Count == 0 ? "Nothing to convert." : $"Converting {batch.Jobs.Count} file(s)…";
+        batch.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName == nameof(ConversionBatch.Progress) && !batch.IsCompleted)
+            {
+                Ui.Post(() =>
+                {
+                    if (ReferenceEquals(LastBatch, batch) && !batch.IsCompleted)
+                    {
+                        BatchStatus = $"Converting… {Math.Max(0, batch.Progress) * 100:0}%";
+                    }
+                });
+            }
+        };
+        batch.Completed += (_, _) => Ui.Post(() => ShowResult(batch));
+        if (batch.IsCompleted)
+        {
+            ShowResult(batch);
+        }
+    }
+
+    private void ShowResult(ConversionBatch batch)
+    {
+        if (!ReferenceEquals(LastBatch, batch))
+        {
+            return;
+        }
+        BatchFailed = batch.FailedCount > 0;
+        BatchDone = !BatchFailed;
+        var size = batch.Outputs.Where(File.Exists).Sum(p => new FileInfo(p).Length);
+        BatchStatus = BatchFailed
+            ? $"{batch.FailedCount} failed: {batch.FirstError}"
+            : batch.SucceededCount == 0 && batch.SkippedCount > 0
+                ? "Skipped: the output name exists and the collision setting is Skip."
+                : $"Saved {batch.SucceededCount} file(s) · output validated · {FileSizeConverter.Format(size)}";
+    }
 
     [RelayCommand]
-    private void PauseAll()
+    private void CancelBatch()
     {
-        foreach (var job in Jobs.Where(j => j.Status == JobStatus.Queued).ToList())
+        if (LastBatch is { IsCompleted: false } batch)
         {
-            _coordinator.Queue.Pause(job);
+            foreach (var job in batch.Jobs.Where(j => j.IsActive))
+            {
+                _coordinator.Queue.Cancel(job);
+            }
         }
     }
 
     [RelayCommand]
-    private void ResumeAll()
+    private void OpenOutputFolder()
     {
-        foreach (var job in Jobs.Where(j => j.Status == JobStatus.Paused).ToList())
+        var output = LastBatch?.Outputs.FirstOrDefault(p => File.Exists(p) || Directory.Exists(p));
+        if (output is not null)
         {
-            _coordinator.Queue.Resume(job);
+            ShellLauncher.RevealInExplorer(output);
+        }
+        else if (!SaveBesideOriginal && Directory.Exists(OutputFolder))
+        {
+            ShellLauncher.OpenFolder(OutputFolder!);
+        }
+        else if (PreviewFile is { } file)
+        {
+            ShellLauncher.RevealInExplorer(file.Input.Path);
         }
     }
 
-    [RelayCommand]
-    private void RevealJob(ConversionJob job)
+    [RelayCommand] private void ShowBatch() => Navigate?.Invoke(Page.Batch);
+
+    protected override void OnPropertyChanged(System.ComponentModel.PropertyChangedEventArgs e)
     {
-        var path = job.Outputs.FirstOrDefault() ?? job.Plan.Inputs.FirstOrDefault()?.Path;
-        if (path is not null)
+        base.OnPropertyChanged(e);
+        if (e.PropertyName == nameof(EditingOptions))
         {
-            ShellLauncher.RevealInExplorer(path);
+            base.OnPropertyChanged(new System.ComponentModel.PropertyChangedEventArgs(nameof(ImageQuality)));
+            base.OnPropertyChanged(new System.ComponentModel.PropertyChangedEventArgs(nameof(StripMetadata)));
+            base.OnPropertyChanged(new System.ComponentModel.PropertyChangedEventArgs(nameof(ResizeText)));
+            ScheduleEstimate();
         }
     }
+
+    public string ResizeText => EditingOptions.Image is { MaxWidth: null, MaxHeight: null }
+        ? "Original"
+        : $"max {EditingOptions.Image.MaxWidth?.ToString() ?? "–"} × {EditingOptions.Image.MaxHeight?.ToString() ?? "–"}";
+
+    /// <summary>Image quality, wrapped so that changing it refreshes the measured size estimate.</summary>
+    public int ImageQuality
+    {
+        get => EditingOptions.Image.Quality;
+        set
+        {
+            if (EditingOptions.Image.Quality == value)
+            {
+                return;
+            }
+            EditingOptions.Image.Quality = value;
+            OnPropertyChanged();
+            ScheduleEstimate();
+        }
+    }
+
+    public bool StripMetadata
+    {
+        get => EditingOptions.Image.StripMetadata;
+        set
+        {
+            EditingOptions.Image.StripMetadata = value;
+            OnPropertyChanged();
+            ScheduleEstimate();
+        }
+    }
+
+    /// <summary>
+    /// Encodes the first image in memory with the current options (debounced) and reports the
+    /// measured byte count. Nothing is written to disk.
+    /// </summary>
+    private void ScheduleEstimate()
+    {
+        _estimate?.Cancel();
+        var file = PreviewFile;
+        var output = SelectedTarget?.Target is { IsAvailable: true, Kind: RouteKind.Convert } t ? t.Output : null;
+        if (file is null || output is null || file.Input.Format?.Category != FormatCategory.Image
+            || output.Category != FormatCategory.Image)
+        {
+            EstimateText = null;
+            return;
+        }
+        var cts = _estimate = new CancellationTokenSource();
+        var options = EditingOptions.Clone().Image;
+        EstimateText = "Measuring output size…";
+        _ = Task.Run(async () =>
+        {
+            await Task.Delay(350, cts.Token); // let the slider settle
+            return ImageMagickConverter.EstimateOutputSize(file.Input, output, options, cts.Token);
+        }, cts.Token).ContinueWith(task => Ui.Post(() =>
+        {
+            if (!ReferenceEquals(_estimate, cts) || cts.IsCancellationRequested)
+            {
+                return;
+            }
+            EstimateText = task.Status == TaskStatus.RanToCompletion && task.Result is { } bytes
+                ? $"Output ≈ {FileSizeConverter.Format(bytes)} for {file.Name} (measured; now {FileSizeConverter.Format(file.Input.Length)})"
+                : "The output size could not be measured for this file.";
+        }), TaskScheduler.Default);
+    }
+
+    [ObservableProperty] private string _presetName = "";
+
+    private bool CanSaveAsPreset() => SelectedTarget is not null && Files.Count > 0;
+
+    [RelayCommand(CanExecute = nameof(CanSaveAsPreset))]
+    private void SaveAsPreset()
+    {
+        var target = SelectedTarget!;
+        var categories = Files.Select(f => f.Input.Format?.Category).OfType<FormatCategory>().Distinct().ToList();
+        var options = PerFileOptions && SelectedFile is not null ? SelectedFile.Options : SharedOptions;
+        var preset = new ConversionPreset
+        {
+            Name = PresetName.Trim() is { Length: > 0 } name ? name : $"{string.Join(" / ", categories)} to {target.Label}",
+            TargetKey = target.Key,
+            Tag = (categories.Count == 1 ? CategoryTag(categories[0]) + " → " : "") + target.Label,
+            MenuLabel = target.Label.Length <= 8 ? target.Label : target.Label[..8],
+            Category = target.Category,
+            Summary = DescribeOptions(target, options),
+            AppliesTo = categories,
+            Options = options.Clone(),
+        };
+        _presets.Value.Add(preset);
+        PresetName = "";
+        StatusMessage = $"Saved preset \"{preset.Name}\". Star it on the Presets page to show it in the Orbit Menu.";
+    }
+
+    private static string CategoryTag(FormatCategory category) => category switch
+    {
+        FormatCategory.Image => "IMG",
+        FormatCategory.Video => "VID",
+        FormatCategory.Audio => "AUD",
+        FormatCategory.Document => "DOC",
+        FormatCategory.Pdf => "PDF",
+        FormatCategory.Archive => "ARC",
+        _ => "ANY",
+    };
+
+    /// <summary>A short summary of only the options that apply to this target.</summary>
+    private string DescribeOptions(TargetViewModel target, ConversionOptions o)
+    {
+        var parts = new List<string>();
+        if (ShowImageOptions)
+        {
+            parts.Add($"quality {o.Image.Quality}");
+            if (o.Image.MaxWidth is not null || o.Image.MaxHeight is not null)
+            {
+                parts.Add($"max {o.Image.MaxWidth?.ToString() ?? "–"} × {o.Image.MaxHeight?.ToString() ?? "–"} px");
+            }
+            if (o.Image.StripMetadata)
+            {
+                parts.Add("strip EXIF");
+            }
+        }
+        if (ShowVideoOptions)
+        {
+            parts.Add($"{o.Video.Codec} · {o.Video.Resolution} · {o.Video.Quality}");
+        }
+        if (ShowAudioOptions)
+        {
+            parts.Add($"{o.Audio.BitrateKbps} kbps");
+        }
+        if (ShowPdfDpi)
+        {
+            parts.Add($"{o.Pdf.ImageDpi} dpi");
+        }
+        return parts.Count == 0 ? target.Target.Description ?? target.Label : string.Join(" · ", parts);
+    }
+
 
     private static void CopyOptions(ConversionOptions source, ConversionOptions target)
     {

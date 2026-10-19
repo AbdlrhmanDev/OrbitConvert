@@ -56,11 +56,14 @@ public static class SafeArchiveExtractor
         }
     }
 
-    public static ArchiveTestResult Test(string archivePath, CancellationToken cancellationToken = default)
+    public static ArchiveTestResult Test(string archivePath, CancellationToken cancellationToken = default,
+        ExtractionLimits? limits = null)
     {
+        limits ??= ExtractionLimits.Default;
         var problems = new List<string>();
         var entries = 0;
         long total = 0;
+        var budget = new Budget(limits, new FileInfo(archivePath).Length);
         try
         {
             if (IsZip(archivePath))
@@ -70,6 +73,7 @@ public static class SafeArchiveExtractor
                 {
                     cancellationToken.ThrowIfCancellationRequested();
                     entries++;
+                    budget.CountEntry();
                     if (IsDirectoryEntry(entry.FullName))
                     {
                         continue;
@@ -81,8 +85,9 @@ public static class SafeArchiveExtractor
                             problems.Add($"{entry.FullName}: encrypted (cannot verify without password)");
                             continue;
                         }
+                        budget.CheckDeclaredBytes(entry.Length);
                         using var s = entry.Open();
-                        var (bytes, crc) = Drain(s, cancellationToken);
+                        var (bytes, crc) = Drain(s, budget, cancellationToken);
                         total += bytes;
                         if (crc != entry.Crc32)
                         {
@@ -104,6 +109,7 @@ public static class SafeArchiveExtractor
                     cancellationToken.ThrowIfCancellationRequested();
                     var entry = reader.Entry;
                     entries++;
+                    budget.CountEntry();
                     if (entry.IsDirectory)
                     {
                         continue;
@@ -113,8 +119,9 @@ public static class SafeArchiveExtractor
                         problems.Add($"{entry.Key}: encrypted (cannot verify without password)");
                         continue;
                     }
+                    budget.CheckDeclaredBytes(entry.Size);
                     using var s = reader.OpenEntryStream();
-                    var (bytes, crc) = Drain(s, cancellationToken);
+                    var (bytes, crc) = Drain(s, budget, cancellationToken);
                     total += bytes;
                     if (entry.Crc != 0 && (uint)entry.Crc != crc)
                     {
@@ -123,7 +130,7 @@ public static class SafeArchiveExtractor
                 }
             }
         }
-        catch (Exception ex) when (ex is InvalidDataException or IOException or InvalidOperationException
+        catch (Exception ex) when (ex is ConversionException or InvalidDataException or IOException or InvalidOperationException
                                        or NotSupportedException or SharpCompress.Common.ArchiveException)
         {
             problems.Add($"The archive could not be read: {ex.Message}");
@@ -213,6 +220,7 @@ public static class SafeArchiveExtractor
             {
                 throw new ConversionException("Password-protected archives are not supported.");
             }
+            budget.CheckDeclaredBytes(entry.Length);
 
             Directory.CreateDirectory(Path.GetDirectoryName(target)!);
             uint crc;
@@ -264,6 +272,7 @@ public static class SafeArchiveExtractor
             {
                 throw new ConversionException("Password-protected archives are not supported.");
             }
+            budget.CheckDeclaredBytes(entry.Size);
 
             Directory.CreateDirectory(Path.GetDirectoryName(target)!);
             uint crc;
@@ -300,7 +309,7 @@ public static class SafeArchiveExtractor
         return crc.GetCurrentHashAsUInt32();
     }
 
-    private static (long Bytes, uint Crc) Drain(Stream input, CancellationToken ct)
+    private static (long Bytes, uint Crc) Drain(Stream input, Budget budget, CancellationToken ct)
     {
         var crc = new Crc32();
         var buffer = new byte[81920];
@@ -309,6 +318,7 @@ public static class SafeArchiveExtractor
         while ((read = input.Read(buffer, 0, buffer.Length)) > 0)
         {
             ct.ThrowIfCancellationRequested();
+            budget.CountBytes(read);
             crc.Append(buffer.AsSpan(0, read));
             total += read;
         }
@@ -362,6 +372,18 @@ public static class SafeArchiveExtractor
                 throw new ConversionException("The archive expands beyond the size limit and was not extracted.");
             }
             if (_bytes > 1L << 30 && _bytes > archiveSize * limits.MaxCompressionRatio)
+            {
+                throw new ConversionException("The archive has a suspicious compression ratio (possible \"zip bomb\") and was not extracted.");
+            }
+        }
+
+        public void CheckDeclaredBytes(long count)
+        {
+            if (count < 0 || count > limits.MaxTotalBytes - _bytes)
+            {
+                throw new ConversionException("The archive expands beyond the size limit and was not extracted.");
+            }
+            if (count > 1L << 30 && count > archiveSize * limits.MaxCompressionRatio)
             {
                 throw new ConversionException("The archive has a suspicious compression ratio (possible \"zip bomb\") and was not extracted.");
             }

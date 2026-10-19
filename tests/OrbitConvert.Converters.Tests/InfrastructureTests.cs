@@ -188,10 +188,25 @@ public class DependencyInstallerTests : IDisposable
         });
     }
 
+    [Fact]
+    public async Task Rejects_non_https_tool_downloads_before_contacting_the_server()
+    {
+        var paths = new AppPaths(_dir.Combine("data"));
+        var locator = new ToolLocator(paths, () => new Dictionary<ExternalTool, string>(), NullLogger<ToolLocator>.Instance);
+        var installer = new DependencyInstaller(paths, locator, new HttpClient(new StubHandler([])), NullLogger<DependencyInstaller>.Instance);
+        var insecure = ToolPackages.SevenZip with { DownloadUrl = new Uri("http://example.test/7zr.exe") };
+
+        var ex = await Assert.ThrowsAsync<ConversionException>(() => installer.InstallAsync(insecure, null, CancellationToken.None));
+
+        Assert.Contains("HTTPS", ex.Message);
+        Assert.False(Directory.Exists(paths.ToolsDirectory));
+    }
+
     private sealed class StubHandler(byte[] body) : HttpMessageHandler
     {
         protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken) =>
-            Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK) { Content = new ByteArrayContent(body) });
+            // HttpClient sets RequestMessage on real responses; the installer checks it to block HTTPS→HTTP redirects.
+            Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK) { Content = new ByteArrayContent(body), RequestMessage = request });
     }
 }
 

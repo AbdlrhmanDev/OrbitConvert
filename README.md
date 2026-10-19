@@ -23,18 +23,38 @@ next to the original. A full desktop app handles batches, options, PDF tools and
 No account. No uploads. No telemetry.
 
 <p align="center">
+  <a href="https://github.com/AbdlrhmanDev/OrbitConvert/releases/latest"><strong>Download OrbitConvert for Windows</strong></a>
+</p>
+
+## Download and install
+
+1. Open the [latest release](https://github.com/AbdlrhmanDev/OrbitConvert/releases/latest).
+2. Download **`OrbitConvert-<version>-win-x64.msi`**.
+3. Open the downloaded file and follow the installer. Administrator rights are not required.
+4. Start OrbitConvert from the Start menu.
+
+> Releases are not code-signed yet, so Windows SmartScreen may show **Unknown publisher**. Verify the
+> file with `SHA256SUMS.txt`, then choose **More info → Run anyway** only when the checksum matches.
+
+Want a version that does not install? Download **`OrbitConvert-<version>-win-x64-portable.zip`**,
+extract it to a folder and run `OrbitConvert.exe`. The app is self-contained; .NET is not required.
+
+After installation, open **Settings → Conversion tools**. Images, ZIP and core PDF tools work
+immediately. Use the Download buttons to add FFmpeg, Pandoc or 7-Zip when you need their formats.
+
+<p align="center">
   <img src="assets/screenshots/radial-menu.png" width="360" alt="Radial menu offering formats for a video file">
   <img src="assets/screenshots/radial-success.png" width="360" alt="Radial menu after a successful conversion">
 </p>
 
 ## Features
 
-- **Radial menu** near the cursor that shows only the formats your files can actually become, with
+- **Orbit Menu**: a radial menu near the cursor that shows only the formats your files can actually become, with
   live progress and a success/failure state. Keyboard: arrows/Tab to move, Enter to convert, 1–9 to
   pick, Esc to close.
 - **Four ways to open it**
   - **File Explorer context menu**: “Convert with OrbitConvert” (and a **Send to** entry).
-  - **Global shortcut** (default <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>O</kbd>) for the files selected
+  - **Global shortcut** (default <kbd>Win</kbd>+<kbd>Shift</kbd>+<kbd>C</kbd>) for the files selected
     in the active File Explorer window.
   - **Floating drop zone**: drag files onto a small always-on-top circle.
   - **Shake while dragging** *(experimental, off by default)*: shows a temporary drop target.
@@ -45,6 +65,17 @@ No account. No uploads. No telemetry.
 - **Batch processing** with bounded parallelism, per-file or shared options, pause/resume for waiting
   jobs, cancel, retry and reorder (for PDF merging).
 - **PDF tools**: merge, split, extract pages, rotate, compress, images → PDF, PDF → images, metadata.
+- **Image tools**: crop (free, 1:1, 16:9, 4:3, 3:4) and add background (gradient, padding, rounded
+  corners, shadow) in small floating editors; shrink in the same format; strip EXIF/GPS from JPG and PNG
+  without re-encoding. After a crop, the Orbit Menu reopens on the new file so you can keep going.
+- **Presets**: six built-ins (e.g. "Optimize for web", "Video for WhatsApp") plus your own, saved from
+  the Convert page. Starred presets appear in the Orbit Menu for files they apply to.
+- **Watch folders** *(off until you turn one on)*: convert new files in a folder with a preset. Files
+  are processed only after they stop growing; temporary downloads and OrbitConvert's own outputs are
+  ignored.
+- **Search** (<kbd>Ctrl</kbd>+<kbd>K</kbd>) across pages, tools, presets and recent history.
+- **Measured size estimates**: for images, the Convert page encodes the first file in memory with your
+  settings and shows the real output size before you start.
 - **Archive tools**: create ZIP/7z, safe extraction (path-traversal and zip-bomb protection), integrity
   checks.
 - **Safe by default**: originals are never overwritten; outputs appear atomically; failed or canceled
@@ -53,11 +84,15 @@ No account. No uploads. No telemetry.
 
 ## Screenshots
 
-| Home | Convert |
+![OrbitConvert home screen](assets/screenshots/home.png)
+
+| Convert | Orbit Menu |
 |---|---|
-| ![Home screen](assets/screenshots/home.png) | ![Convert screen with images and options](assets/screenshots/convert.png) |
-| **PDF & archive tools** | **Settings** |
-| ![Tools screen](assets/screenshots/tools.png) | ![Settings screen](assets/screenshots/settings.png) |
+| ![Convert screen with images and options](assets/screenshots/convert.png) | ![Radial Orbit Menu](assets/screenshots/radial-menu.png) |
+| **PDF tools** | **Presets** |
+| ![PDF tools screen](assets/screenshots/tools.png) | ![Presets screen](assets/screenshots/presets.png) |
+| **Settings** | |
+| ![Settings screen](assets/screenshots/settings.png) | |
 
 All screenshots are of the real application (dark theme, Windows 11).
 
@@ -87,26 +122,24 @@ render DPI, compression level; archive name and compression level.
 **Not supported** (and not pretended): HEIC *output* (the bundled ImageMagick cannot write it), OCR,
 editable reconstruction of scanned PDFs, password-protected PDFs and archives, DRM-protected media.
 
-## Install
+## Verify a download
 
-> Releases are **not code-signed**. Windows SmartScreen may warn that the publisher is unknown. Verify
-> the download against `SHA256SUMS.txt` from the same release before running it.
+Keep the MSI and `SHA256SUMS.txt` in the same folder, then run:
 
-1. Download from [Releases](https://github.com/AbdlrhmanDev/OrbitConvert/releases):
-   - `OrbitConvert-<version>-win-x64.msi` — installs for the current user, **no admin rights needed**,
-     into `%LOCALAPPDATA%\Programs\OrbitConvert`. Optional features: Explorer integration (on),
-     start at sign-in (on), desktop shortcut (off).
-   - or `OrbitConvert-<version>-win-x64-portable.zip` — unzip anywhere; settings stay in `.\data`.
-2. Verify: `Get-FileHash .\OrbitConvert-*.msi -Algorithm SHA256` must match `SHA256SUMS.txt`.
-3. Open **Settings → Conversion tools** to add FFmpeg, Pandoc or 7-Zip (one click, checksum-verified),
-   or point OrbitConvert to copies you already have. Install LibreOffice and Ghostscript from their
-   websites if you need office or lossy PDF conversions.
+```powershell
+(Get-FileHash .\OrbitConvert-*-win-x64.msi -Algorithm SHA256).Hash.ToLower()
+```
 
-The builds are self-contained: you do **not** need to install .NET.
+The result must match the MSI entry in `SHA256SUMS.txt`.
 
-Uninstall from **Settings → Apps** (or `msiexec /x OrbitConvert-<version>-win-x64.msi`). This removes the
-program, shortcuts and Explorer integration. Your settings, history and downloaded tools in
-`%LOCALAPPDATA%\OrbitConvert` are kept; delete that folder to remove them too.
+## Update or uninstall
+
+- **Update:** open **Settings → Updates → Check now → Download and install**. OrbitConvert downloads
+  the new MSI only after you click, verifies SHA-256, closes itself and starts Windows Installer.
+- **Uninstall:** open **Windows Settings → Apps → Installed apps → OrbitConvert → Uninstall**.
+
+Uninstalling removes the app, shortcuts and Explorer integration. Settings, history and downloaded
+tools remain in `%LOCALAPPDATA%\OrbitConvert`; delete that folder too if you want a complete reset.
 
 ### System requirements
 
@@ -116,7 +149,7 @@ program, shortcuts and Explorer integration. Your settings, history and download
 ## Use it
 
 - **From File Explorer**: right-click files → *Convert with OrbitConvert* (Windows 11: *Show more
-  options* first), or *Send to → OrbitConvert*, or select files and press <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>O</kbd>.
+  options* first), or *Send to → OrbitConvert*, or select files and press <kbd>Win</kbd>+<kbd>Shift</kbd>+<kbd>C</kbd>.
 - **From the app**: drop files on the window, pick a target, adjust options, press *Start conversion*.
 - **Batch**: add many files; targets shown are the ones all files share. Files already in the target
   format are skipped.
@@ -154,7 +187,7 @@ dotnet run --project src/OrbitConvert.App          # start the desktop app
 pwsh scripts/build-release.ps1                     # MSI + portable ZIP + checksums in artifacts\release
 ```
 
-Integration tests that need FFmpeg, Pandoc, LibreOffice or 7-Zip are **skipped** (not failed) when the
+Integration tests that need FFmpeg, Pandoc, LibreOffice, 7-Zip or Ghostscript are **skipped** (not failed) when the
 tool is missing. Point `ORBITCONVERT_TOOLS_DIR` at a folder containing the tools to run them. See
 [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md).
 
@@ -162,8 +195,9 @@ tool is missing. Point `ORBITCONVERT_TOOLS_DIR` at a folder containing the tools
 
 Verified by the maintainers on Windows 11 (build 26300, x64, 150 % scaling, single monitor):
 
-- The solution builds with zero warnings; 204 automated tests pass (88 core, 89 converter, 27 integration
-  with real FFmpeg 9.0.2, Pandoc 3.12.1, LibreOffice 26.8.1 and 7-Zip 26.04).
+- The solution builds with zero warnings; **236 automated tests pass** (89 core, 119 converter and 28
+  integration tests with real FFmpeg 9.0.2, Pandoc 3.12.1, LibreOffice 26.8.1.1, 7-Zip 26.04 and
+  Ghostscript 10.08.0).
 - The app launches; the radial menu opens from the command line and from the Explorer shell verb, and
   conversions started from it and from the Convert page produce validated files (driven through UI
   Automation).
@@ -191,8 +225,8 @@ Reports are welcome.
 ## Privacy
 
 OrbitConvert works offline. It never uploads files, has no accounts, analytics or telemetry, and makes
-network requests only when **you** click *Download* for a tool or *Check now* / enable update checks
-(which ask GitHub for the latest release number). History and logs are stored locally and can be
+network requests only when **you** download a tool, check for updates, or explicitly download an
+update (which is SHA-256 verified before installation). History and logs are stored locally and can be
 turned off or deleted in Settings. See [docs/SECURITY.md](docs/SECURITY.md) for details.
 
 ## Security

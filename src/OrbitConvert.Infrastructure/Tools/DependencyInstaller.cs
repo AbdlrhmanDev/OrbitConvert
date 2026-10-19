@@ -60,12 +60,34 @@ public sealed record DownloadProgress(long BytesReceived, long? TotalBytes, stri
 /// </summary>
 public sealed class DependencyInstaller(AppPaths paths, IToolLocator locator, HttpClient http, ILogger<DependencyInstaller> logger)
 {
+    private const long MaxDownloadBytes = 1024L * 1024 * 1024;
+    private readonly SemaphoreSlim _installGate = new(1, 1);
+
     public string InstallDirectory(ToolPackage package) =>
         Path.Combine(paths.ToolsDirectory, package.Provides[0].ToString().ToLowerInvariant());
 
     public bool IsInstalledByOrbitConvert(ToolPackage package) => Directory.Exists(InstallDirectory(package));
 
     public async Task InstallAsync(ToolPackage package, IProgress<DownloadProgress>? progress, CancellationToken cancellationToken)
+    {
+        if (!string.Equals(package.DownloadUrl.Scheme, Uri.UriSchemeHttps, StringComparison.OrdinalIgnoreCase))
+        {
+            throw new ConversionException("Tool downloads must use HTTPS.");
+        }
+
+        await _installGate.WaitAsync(cancellationToken).ConfigureAwait(false);
+        try
+        {
+            await InstallCoreAsync(package, progress, cancellationToken).ConfigureAwait(false);
+        }
+        finally
+        {
+            _installGate.Release();
+        }
+    }
+
+    private async Task InstallCoreAsync(ToolPackage package, IProgress<DownloadProgress>? progress,
+        CancellationToken cancellationToken)
     {
         Directory.CreateDirectory(paths.ToolsDirectory);
         var target = InstallDirectory(package);
@@ -136,7 +158,15 @@ public sealed class DependencyInstaller(AppPaths paths, IToolLocator locator, Ht
     {
         using var response = await http.GetAsync(url, HttpCompletionOption.ResponseHeadersRead, ct).ConfigureAwait(false);
         response.EnsureSuccessStatusCode();
+        if (!string.Equals(response.RequestMessage?.RequestUri?.Scheme, Uri.UriSchemeHttps, StringComparison.OrdinalIgnoreCase))
+        {
+            throw new ConversionException("The tool download was redirected to a non-HTTPS address and was blocked.");
+        }
         var total = response.Content.Headers.ContentLength;
+        if (total > MaxDownloadBytes)
+        {
+            throw new ConversionException("The tool download is larger than the 1 GiB safety limit.");
+        }
         await using var source = await response.Content.ReadAsStreamAsync(ct).ConfigureAwait(false);
         await using var file = new FileStream(destination, FileMode.CreateNew, FileAccess.Write, FileShare.None, 81920, useAsync: true);
         var buffer = new byte[81920];
@@ -144,6 +174,10 @@ public sealed class DependencyInstaller(AppPaths paths, IToolLocator locator, Ht
         int read;
         while ((read = await source.ReadAsync(buffer, ct).ConfigureAwait(false)) > 0)
         {
+            if (received > MaxDownloadBytes - read)
+            {
+                throw new ConversionException("The tool download exceeded the 1 GiB safety limit and was stopped.");
+            }
             await file.WriteAsync(buffer.AsMemory(0, read), ct).ConfigureAwait(false);
             received += read;
             progress?.Report(new DownloadProgress(received, total, "Downloading"));

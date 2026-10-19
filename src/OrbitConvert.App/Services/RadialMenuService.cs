@@ -16,7 +16,8 @@ public interface IMainWindowHost
 
 /// <summary>Shows the radial conversion menu for a set of files at a screen position.</summary>
 public sealed class RadialMenuService(
-    ConversionCoordinator coordinator, ISettingsStore settings, Lazy<IMainWindowHost> host, ILogger<RadialMenuService> logger)
+    ConversionCoordinator coordinator, ISettingsStore settings, Lazy<IMainWindowHost> host,
+    ImageEditorService imageEditor, ILogger<RadialMenuService> logger)
 {
     private RadialMenuWindow? _current;
 
@@ -36,6 +37,7 @@ public sealed class RadialMenuService(
         var point = anchor ?? ScreenGeometry.CursorPosition();
         _current?.FadeOutAndClose();
 
+        Action? windowAction = null;
         var vm = new RadialMenuViewModel(files, coordinator, settings);
         vm.OpenMainRequested += (_, request) =>
         {
@@ -47,6 +49,14 @@ public sealed class RadialMenuService(
             {
                 host.Value.ShowConvert(request.Files, request.TargetKey);
             }
+        };
+        vm.ImageActionRequested += (_, request) =>
+        {
+            windowAction = () =>
+            {
+                if (request.Action == "crop") imageEditor.OpenCrop(request.Path);
+                else if (request.Action == "background") imageEditor.OpenBackground(request.Path);
+            };
         };
 
         try
@@ -60,7 +70,8 @@ public sealed class RadialMenuService(
             return;
         }
 
-        var window = new RadialMenuWindow(vm, point);
+        var window = new RadialMenuWindow(vm, point, settings.Current.ReduceMotion);
+        window.Closed += (_, _) => windowAction?.Invoke();
         window.Closed += (_, _) =>
         {
             if (ReferenceEquals(_current, window))
@@ -70,6 +81,6 @@ public sealed class RadialMenuService(
         };
         _current = window;
         window.Show();
-        logger.LogInformation("Radial menu shown for {Count} file(s) with {Targets} target(s)", files.Count, vm.Items.Count - 1);
+        logger.LogInformation("Radial menu shown for {Count} file(s) with {Targets} target(s)", files.Count, vm.Items.Count);
     }
 }

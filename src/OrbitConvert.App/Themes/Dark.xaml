@@ -1,36 +1,56 @@
 <ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
-    <!-- Semantic color tokens, dark theme. Keys match Light.xaml exactly. -->
-    <SolidColorBrush x:Key="Brush.Background" Color="#15161B" />
-    <SolidColorBrush x:Key="Brush.Sidebar" Color="#1B1C22" />
-    <SolidColorBrush x:Key="Brush.Surface" Color="#202229" />
-    <SolidColorBrush x:Key="Brush.SurfaceAlt" Color="#262830" />
-    <SolidColorBrush x:Key="Brush.SurfaceHover" Color="#2D2F38" />
-    <SolidColorBrush x:Key="Brush.Border" Color="#30333C" />
-    <SolidColorBrush x:Key="Brush.BorderStrong" Color="#454956" />
-    <SolidColorBrush x:Key="Brush.Text" Color="#F0F1F5" />
-    <SolidColorBrush x:Key="Brush.TextSecondary" Color="#A8ADBA" />
-    <SolidColorBrush x:Key="Brush.TextTertiary" Color="#7E8391" />
-    <SolidColorBrush x:Key="Brush.Accent" Color="#8B80F9" />
-    <SolidColorBrush x:Key="Brush.AccentHover" Color="#A098FB" />
-    <SolidColorBrush x:Key="Brush.AccentSubtle" Color="#2C2A4A" />
-    <SolidColorBrush x:Key="Brush.OnAccent" Color="#15161B" />
-    <SolidColorBrush x:Key="Brush.Success" Color="#3DCB87" />
-    <SolidColorBrush x:Key="Brush.Danger" Color="#FF6B6B" />
-    <SolidColorBrush x:Key="Brush.Warning" Color="#F2B232" />
-    <SolidColorBrush x:Key="Brush.DropHighlight" Color="#2F2B57" />
+    <!-- OrbitConvert Identity v1.0, dark ("Void"). Keys match Light.xaml exactly.
+         Ion Lime marks the action only: the hovered segment, the primary button, the progress ring. -->
+    <SolidColorBrush x:Key="Brush.Window" Color="#0F1015" />
+    <SolidColorBrush x:Key="Brush.Background" Color="#15171D" />
+    <SolidColorBrush x:Key="Brush.Sidebar" Color="#111318" />
+    <SolidColorBrush x:Key="Brush.Surface" Color="#1B1E25" />
+    <SolidColorBrush x:Key="Brush.SurfaceAlt" Color="#22252E" />
+    <SolidColorBrush x:Key="Brush.SurfaceHover" Color="#22252E" />
+    <SolidColorBrush x:Key="Brush.NavSelected" Color="#22252E" />
+    <SolidColorBrush x:Key="Brush.Border" Color="#262A33" />
+    <SolidColorBrush x:Key="Brush.BorderStrong" Color="#3A3F4B" />
+    <SolidColorBrush x:Key="Brush.Track" Color="#2C303B" />
+    <SolidColorBrush x:Key="Brush.Text" Color="#F2F3EE" />
+    <SolidColorBrush x:Key="Brush.TextSecondary" Color="#B5B8C0" />
+    <SolidColorBrush x:Key="Brush.TextTertiary" Color="#8A8D98" />
+    <SolidColorBrush x:Key="Brush.Accent" Color="#C6F432" />
+    <SolidColorBrush x:Key="Brush.AccentHover" Color="#E2FF8A" />
+    <!-- Lime used as text or strokes; on paper this becomes Deep Lime for contrast. -->
+    <SolidColorBrush x:Key="Brush.AccentText" Color="#C6F432" />
+    <SolidColorBrush x:Key="Brush.AccentSubtle" Color="#232A12" />
+    <SolidColorBrush x:Key="Brush.OnAccent" Color="#0B0C10" />
+    <SolidColorBrush x:Key="Brush.Success" Color="#C6F432" />
+    <SolidColorBrush x:Key="Brush.Danger" Color="#FF6B5E" />
+    <SolidColorBrush x:Key="Brush.Warning" Color="#E8D36A" />
+    <SolidColorBrush x:Key="Brush.DropHighlight" Color="#1A1D12" />
 
-    <SolidColorBrush x:Key="Brush.RadialDisc" Color="#E61C1D24" />
-    <SolidColorBrush x:Key="Brush.RadialBorder" Color="#40FFFFFF" />
-    <SolidColorBrush x:Key="Brush.RadialItem" Color="#FF2A2C35" />
-    <SolidColorBrush x:Key="Brush.RadialCenter" Color="#FF262830" />
+    <SolidColorBrush x:Key="Brush.AccentGradient" Color="#C6F432" />
+    <RadialGradientBrush x:Key="Brush.HeroGradient" Center="0.75,0.1" GradientOrigin="0.75,0.1" RadiusX="0.9" RadiusY="1.1">
+        <GradientStop Color="#1E2512" Offset="0" />
+        <GradientStop Color="#15171D" Offset="0.6" />
+        <GradientStop Color="#15171D" Offset="1" />
+    </RadialGradientBrush>
+    <SolidColorBrush x:Key="Brush.HeroGlow" Color="Transparent" />
 
-    <SolidColorBrush x:Key="Brush.Category.Image" Color="#38D39F" />
-    <SolidColorBrush x:Key="Brush.Category.Video" Color="#FF8A4C" />
-    <SolidColorBrush x:Key="Brush.Category.Audio" Color="#A48BFF" />
-    <SolidColorBrush x:Key="Brush.Category.Document" Color="#5AA9FF" />
-    <SolidColorBrush x:Key="Brush.Category.Pdf" Color="#FF6F9F" />
-    <SolidColorBrush x:Key="Brush.Category.Archive" Color="#E8B53A" />
-    <SolidColorBrush x:Key="Brush.Category.Other" Color="#9AA1B2" />
-    <Color x:Key="Color.Shadow">#80000000</Color>
+    <!-- Orbit Menu -->
+    <SolidColorBrush x:Key="Brush.RadialDisc" Color="#E613151B" />
+    <SolidColorBrush x:Key="Brush.RadialBorder" Color="#2C303B" />
+    <SolidColorBrush x:Key="Brush.RadialItem" Color="#1C1F27" />
+    <SolidColorBrush x:Key="Brush.RadialItemText" Color="#F2F3EE" />
+    <SolidColorBrush x:Key="Brush.RadialItemHint" Color="#8A8D98" />
+    <SolidColorBrush x:Key="Brush.RadialActiveHint" Color="#2E3A06" />
+    <SolidColorBrush x:Key="Brush.RadialCenter" Color="#0B0C10" />
+    <SolidColorBrush x:Key="Brush.RadialAccentText" Color="#C6F432" />
+
+    <!-- File category hues: used only on format glyphs. -->
+    <SolidColorBrush x:Key="Brush.Category.Image" Color="#4FD1E8" />
+    <SolidColorBrush x:Key="Brush.Category.Video" Color="#FF7AC6" />
+    <SolidColorBrush x:Key="Brush.Category.Audio" Color="#B68CFF" />
+    <SolidColorBrush x:Key="Brush.Category.Document" Color="#6EA8FF" />
+    <SolidColorBrush x:Key="Brush.Category.Pdf" Color="#FF6B5E" />
+    <SolidColorBrush x:Key="Brush.Category.Archive" Color="#E8D36A" />
+    <SolidColorBrush x:Key="Brush.Category.Other" Color="#8A8D98" />
+    <Color x:Key="Color.Shadow">#99000000</Color>
 </ResourceDictionary>

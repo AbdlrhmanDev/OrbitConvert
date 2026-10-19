@@ -54,6 +54,9 @@
   <ItemGroup>
     <Resource Include="Assets\logo.png" />
     <Resource Include="Assets\logo-256.png" />
+    <Resource Include="Assets\mark-128.png" />
+    <!-- Bricolage Grotesque and JetBrains Mono (SIL OFL 1.1); regenerate with scripts/make-fonts.py. -->
+    <Resource Include="Assets\Fonts\*.ttf" />
     <None Include="appsettings.json" CopyToOutputDirectory="PreserveNewest" />
     <None Include="..\..\NOTICE.md" Link="NOTICE.md" CopyToOutputDirectory="PreserveNewest" />
     <None Include="..\..\LICENSE" Link="LICENSE.txt" CopyToOutputDirectory="PreserveNewest" />

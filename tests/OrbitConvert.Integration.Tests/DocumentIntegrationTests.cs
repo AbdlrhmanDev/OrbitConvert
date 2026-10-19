@@ -1,9 +1,13 @@
 using System.IO.Compression;
+using ImageMagick;
 using OrbitConvert.Converters.Archives;
+using OrbitConvert.Converters.Pdf;
 using OrbitConvert.Core.Conversion;
 using OrbitConvert.Core.Formats;
 using OrbitConvert.Core.Tools;
 using OrbitConvert.Infrastructure.Archives;
+using PdfSharp.Drawing;
+using PdfSharp.Pdf;
 using PdfSharp.Pdf.IO;
 
 namespace OrbitConvert.Integration.Tests;
@@ -154,6 +158,39 @@ public class DocumentIntegrationTests(IntegrationFixture fx)
         Assert.True(SafeArchiveExtractor.Test(archive).IsValid);
         var folder = (await fx.ConvertAsync(archive, ArchiveConverter.ExtractKey)).AssertSucceeded().Outputs[0];
         Assert.Equal("beta", File.ReadAllText(Path.Combine(folder, "b ü.txt")));
+    }
+
+    [SkippableFact]
+    public async Task Ghostscript_strong_compression_reduces_an_image_heavy_pdf()
+    {
+        Skip.IfNot(fx.Has(ExternalTool.Ghostscript), "Ghostscript not installed");
+        var dir = fx.NewDir();
+        var imagePath = Path.Combine(dir, "photo.jpg");
+        using (var image = new MagickImage(MagickColors.Gray, 2400, 2400))
+        {
+            image.AddNoise(NoiseType.Gaussian);
+            image.Quality = 96;
+            image.Write(imagePath, MagickFormat.Jpeg);
+        }
+        var pdfPath = Path.Combine(dir, "scan.pdf");
+        using (var document = new PdfDocument())
+        {
+            var page = document.AddPage();
+            page.Width = XUnit.FromPoint(600);
+            page.Height = XUnit.FromPoint(600);
+            using var graphics = XGraphics.FromPdfPage(page);
+            using var source = XImage.FromFile(imagePath);
+            graphics.DrawImage(source, 0, 0, 600, 600);
+            document.Save(pdfPath);
+        }
+
+        var result = (await fx.ConvertAsync(pdfPath, PdfToolsConverter.CompressKey,
+            new ConversionOptions { Pdf = { Compression = PdfCompressionLevel.Strong } })).AssertSucceeded();
+
+        var output = Assert.Single(result.Outputs);
+        Assert.True(new FileInfo(output).Length < new FileInfo(pdfPath).Length);
+        using var compressed = PdfReader.Open(output, PdfDocumentOpenMode.Import);
+        Assert.Single(compressed.Pages);
     }
 
     [Fact]

@@ -67,6 +67,18 @@ OrbitConvert crashes, Windows closes the job handle and kills the tools. Timeout
   at the cursor using the target monitor's effective DPI, clamped to that monitor's work area, and
   re-centered on `DpiChanged`. Items are laid out by `RadialMenuViewModel` (8 per inner ring, outer ring
   for more).
+- **Main window**: a `WindowChrome` title bar (44 px) with a Ctrl+K command palette over pages, tools,
+  presets and history; nine pages (Home, Convert, Batch, PDF Tools, Image Tools, Automation, Presets,
+  History, Settings). The Convert page measures image output size by encoding the first file in memory
+  (`ImageMagickConverter.EstimateOutputSize`) with the current options.
+- **Presets** (`Core/Presets`) are a target key plus `ConversionOptions`, stored in settings.
+  `ConversionCoordinator.StartPreset` runs one; `PresetApplies` checks the input categories and that the
+  target is available for the inputs.
+- **Folder automation**: `Infrastructure/Automation/FolderAutomation` wraps `FileSystemWatcher` per
+  enabled watcher, waits until a file stops growing and can be opened, ignores temporary files and
+  every output OrbitConvert writes, and hands each file to `AutomationService` exactly once.
+- **Image editors** (`CropEditorWindow`, `BackgroundEditorWindow`) call `IImageEditor`; a saved crop
+  reopens the Orbit Menu on the new file.
 - **Single instance**: a per-user mutex plus a named pipe restricted to the current user
   (`PipeOptions.CurrentUserOnly`). Later launches forward their command and pass foreground rights with
   `AllowSetForegroundWindow` so the running instance may show its window.
