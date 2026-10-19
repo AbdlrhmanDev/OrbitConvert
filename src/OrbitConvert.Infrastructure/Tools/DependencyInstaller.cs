@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Security.Cryptography;
 using Microsoft.Extensions.Logging;
 using OrbitConvert.Core.Conversion;
@@ -15,7 +16,8 @@ public sealed record ToolPackage(
     string Sha256,
     bool IsArchive,
     string License,
-    string Notice);
+    string Notice,
+    bool ExternalInstaller = false);
 
 public static class ToolPackages
 {
@@ -48,7 +50,27 @@ public static class ToolPackages
         "LGPL-2.1",
         "7-Zip is developed by Igor Pavlov; source code is available at 7-zip.org.");
 
-    public static IReadOnlyList<ToolPackage> All { get; } = [FFmpeg, Pandoc, SevenZip];
+    public static readonly ToolPackage LibreOffice = new(
+        "LibreOffice", "26.8.1",
+        [ExternalTool.LibreOffice],
+        new Uri("https://download.documentfoundation.org/libreoffice/stable/26.8.1/win/x86_64/LibreOffice_26.8.1_Win_x86-64.msi"),
+        "c6298b10cfa1748bcbedad94c62ce771e240e5021bfd6d7a967cd571b04b5312",
+        IsArchive: false,
+        "MPL-2.0",
+        "LibreOffice is developed by The Document Foundation. Its official installer is opened only after verification.",
+        ExternalInstaller: true);
+
+    public static readonly ToolPackage Ghostscript = new(
+        "Ghostscript", "10.08.0",
+        [ExternalTool.Ghostscript],
+        new Uri("https://github.com/ArtifexSoftware/ghostpdl-downloads/releases/download/gs10080/gs10080w64.exe"),
+        "52a91b8bf09298788d7a57b9206127026c23eacd75405f0a131e26dc381dce50",
+        IsArchive: false,
+        "AGPL-3.0",
+        "Ghostscript is developed by Artifex Software. Its official installer is opened only after verification.",
+        ExternalInstaller: true);
+
+    public static IReadOnlyList<ToolPackage> All { get; } = [FFmpeg, Pandoc, SevenZip, LibreOffice, Ghostscript];
 
     public static ToolPackage? For(ExternalTool tool) => All.FirstOrDefault(p => p.Provides.Contains(tool));
 }
@@ -107,6 +129,13 @@ public sealed class DependencyInstaller(AppPaths paths, IToolLocator locator, Ht
                     $"The downloaded {package.Name} failed integrity verification and was deleted. Expected SHA-256 {package.Sha256}, got {actual}.");
             }
 
+            if (package.ExternalInstaller)
+            {
+                await RunVerifiedInstallerAsync(package, download, progress, cancellationToken).ConfigureAwait(false);
+                locator.Refresh();
+                return;
+            }
+
             if (Directory.Exists(staging))
             {
                 Directory.Delete(staging, recursive: true);
@@ -142,6 +171,34 @@ public sealed class DependencyInstaller(AppPaths paths, IToolLocator locator, Ht
                 try { Directory.Delete(staging, recursive: true); } catch (IOException) { }
             }
         }
+    }
+
+    private static async Task RunVerifiedInstallerAsync(ToolPackage package, string download,
+        IProgress<DownloadProgress>? progress, CancellationToken ct)
+    {
+        if (!OperatingSystem.IsWindows())
+        {
+            throw new ConversionException($"The {package.Name} installer is available only on Windows.");
+        }
+        progress?.Report(new DownloadProgress(0, null, "Waiting for installer"));
+        var isMsi = package.DownloadUrl.AbsolutePath.EndsWith(".msi", StringComparison.OrdinalIgnoreCase);
+        var start = new ProcessStartInfo
+        {
+            FileName = isMsi ? "msiexec.exe" : download,
+            UseShellExecute = true,
+        };
+        if (isMsi)
+        {
+            start.ArgumentList.Add("/i");
+            start.ArgumentList.Add(download);
+        }
+        using var process = Process.Start(start) ?? throw new ConversionException($"The {package.Name} installer could not be opened.");
+        await process.WaitForExitAsync(ct).ConfigureAwait(false);
+        if (process.ExitCode is not (0 or 3010 or 1641))
+        {
+            throw new ConversionException($"The {package.Name} installer did not complete (exit code {process.ExitCode}).");
+        }
+        progress?.Report(new DownloadProgress(0, null, "Installed"));
     }
 
     public void Uninstall(ToolPackage package)

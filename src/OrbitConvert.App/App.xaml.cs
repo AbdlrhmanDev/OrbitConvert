@@ -77,6 +77,7 @@ public partial class App : Application, IMainWindowHost
 
         var settings = _services.GetRequiredService<ISettingsStore>();
         _services.GetRequiredService<ThemeManager>().Apply(settings.Current.Theme);
+        _services.GetRequiredService<LanguageManager>().Apply(settings.Current.Language);
         // Stale-workspace cleanup can touch many files after a crash. Keep it off the UI thread so
         // the main window and Explorer context-menu activation are never delayed by disk cleanup.
         _ = Task.Run(() => _services.GetRequiredService<TempWorkspaceProvider>().CleanupStale(TimeSpan.FromDays(1)));
@@ -143,10 +144,12 @@ public partial class App : Application, IMainWindowHost
         services.AddSingleton<IMainWindowHost>(this);
         services.AddSingleton(sp => new Lazy<IMainWindowHost>(() => sp.GetRequiredService<IMainWindowHost>()));
         services.AddSingleton<ThemeManager>();
+        services.AddSingleton<LanguageManager>();
         services.AddSingleton<DialogService>();
         services.AddSingleton<NotificationService>();
         services.AddSingleton<ConversionCoordinator>();
         services.AddSingleton<ImageEditorService>();
+        services.AddSingleton<PdfEditorService>();
         services.AddSingleton<RadialMenuService>();
         services.AddSingleton(sp => new Lazy<RadialMenuService>(() => sp.GetRequiredService<RadialMenuService>()));
         services.AddSingleton<ExplorerSelection>();
@@ -206,7 +209,8 @@ public partial class App : Application, IMainWindowHost
     {
         if (_mainWindow is null)
         {
-            _mainWindow = new MainWindow(_services!.GetRequiredService<MainViewModel>(), _services!.GetRequiredService<ThemeManager>());
+            _mainWindow = new MainWindow(_services!.GetRequiredService<MainViewModel>(), _services!.GetRequiredService<ThemeManager>(),
+                _services!.GetRequiredService<LanguageManager>());
             _mainWindow.Closing += OnMainWindowClosing;
         }
         if (!_mainWindow.IsVisible)

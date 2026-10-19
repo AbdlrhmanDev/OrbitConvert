@@ -21,6 +21,7 @@ public static class ConvertersServiceCollectionExtensions
         services.AddSingleton<FfmpegCapabilities>();
         services.AddSingleton<ImageMagickConverter>();
         services.AddSingleton<Core.Images.IImageEditor, ImageEditor>();
+        services.AddSingleton<Core.Pdf.IPdfEditor, PdfEditor>();
         services.AddSingleton<FfmpegConverter>();
         services.AddSingleton<PandocConverter>();
         services.AddSingleton<LibreOfficeConverter>();

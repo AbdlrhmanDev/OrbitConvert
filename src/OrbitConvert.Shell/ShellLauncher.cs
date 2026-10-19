@@ -26,6 +26,14 @@ public static class ShellLauncher
         }
     }
 
+    public static void OpenFile(string path)
+    {
+        if (File.Exists(path))
+        {
+            Process.Start(new ProcessStartInfo(Path.GetFullPath(path)) { UseShellExecute = true });
+        }
+    }
+
     /// <summary>Opens an https link in the default browser. Other schemes are refused.</summary>
     public static void OpenUrl(string url)
     {

@@ -93,6 +93,15 @@ public static class FfmpegArgumentBuilder
             "-i", FilePath(input),
         };
 
+        if (container.Category == FormatCategory.Audio)
+        {
+            AddTrim(args, options.Audio.TrimStart, options.Audio.TrimEnd);
+        }
+        else
+        {
+            AddTrim(args, options.Video.TrimStart, options.Video.TrimEnd);
+        }
+
         if (container == KnownFormats.Gif)
         {
             AddGif(args, options.Video);
@@ -155,7 +164,8 @@ public static class FfmpegArgumentBuilder
         {
             args.AddRange(["-map", "0:a:0?"]);
         }
-        args.AddRange(["-sn", "-dn"]);
+        AddSubtitles(args, container, v);
+        args.Add("-dn");
 
         var height = VideoOptions.ResolutionHeight(v.Resolution);
         // Encoders using 4:2:0 chroma need even dimensions; never upscale.
@@ -195,6 +205,59 @@ public static class FfmpegArgumentBuilder
         }
     }
 
+    private static void AddTrim(List<string> args, TimeSpan? start, TimeSpan? end)
+    {
+        if (start < TimeSpan.Zero)
+        {
+            throw new ConversionException("Trim start cannot be negative.");
+        }
+        if (end <= TimeSpan.Zero)
+        {
+            throw new ConversionException("Trim end must be later than zero.");
+        }
+
+        var effectiveStart = start ?? TimeSpan.Zero;
+        if (end is { } trimEnd && trimEnd <= effectiveStart)
+        {
+            throw new ConversionException("Trim end must be later than trim start.");
+        }
+
+        if (start is { } trimStart)
+        {
+            args.AddRange(["-ss", Timestamp(trimStart)]);
+        }
+        if (end is { } finish)
+        {
+            args.AddRange(["-t", Timestamp(finish - effectiveStart)]);
+        }
+    }
+
+    private static void AddSubtitles(List<string> args, FileFormat container, VideoOptions options)
+    {
+        if (options.Subtitles == SubtitleMode.DropAll)
+        {
+            args.Add("-sn");
+            return;
+        }
+
+        if (container != KnownFormats.Mkv)
+        {
+            throw new ConversionException("Subtitle track copying is currently supported only for MKV output.");
+        }
+
+        if (options.Subtitles == SubtitleMode.Select)
+        {
+            if (options.SubtitleStreamIndex is not >= 0)
+            {
+                throw new ConversionException("Choose a subtitle track before starting the conversion.");
+            }
+            args.AddRange(["-map", $"0:s:{options.SubtitleStreamIndex.Value}?", "-c:s", "copy"]);
+            return;
+        }
+
+        args.AddRange(["-map", "0:s?", "-c:s", "copy"]);
+    }
+
     internal static IEnumerable<string> VideoQualityArgs(string encoder, VideoQuality q)
     {
         int Pick(int high, int balanced, int small) => q switch
@@ -221,6 +284,8 @@ public static class FfmpegArgumentBuilder
     private static bool IsLossy(FileFormat f) => f.Id is "mp3" or "aac" or "m4a" or "ogg" or "opus";
 
     private static string Kbps(int kbps) => Math.Clamp(kbps, 8, 512).ToString(CultureInfo.InvariantCulture) + "k";
+
+    private static string Timestamp(TimeSpan value) => value.ToString(@"hh\:mm\:ss\.fff", CultureInfo.InvariantCulture);
 
     /// <summary>The "file:" protocol prefix stops FFmpeg from interpreting names like "-x" or "concat:...".</summary>
     public static string FilePath(string path) => "file:" + Path.GetFullPath(path);

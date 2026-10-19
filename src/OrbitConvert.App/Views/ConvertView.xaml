@@ -166,20 +166,23 @@
                             <DataTemplate>
                                 <Grid>
                                     <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="Auto" /><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /><ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="Auto" /><ColumnDefinition Width="*" /><ColumnDefinition Width="170" /><ColumnDefinition Width="Auto" /><ColumnDefinition Width="Auto" />
                                     </Grid.ColumnDefinitions>
                                     <c:FormatBadge Label="{Binding TypeLabel}" Category="{Binding Category}" Width="26" Height="26" Margin="0,0,10,0" />
                                     <TextBlock Grid.Column="1" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" FontSize="13" Foreground="{DynamicResource Brush.Text}">
                                         <Run Text="{Binding Name, Mode=OneWay}" /><Run Text="  " /><Run Text="{Binding SizeText, Mode=OneWay}" FontFamily="{StaticResource MonoFont}"
                                                                                                         FontSize="11" Foreground="{DynamicResource Brush.TextTertiary}" />
                                     </TextBlock>
-                                    <StackPanel Grid.Column="2" Orientation="Horizontal">
+                                    <ComboBox Grid.Column="2" ItemsSource="{Binding Targets}" SelectedItem="{Binding SelectedTarget}" DisplayMemberPath="Label"
+                                              Margin="8,0" MinWidth="150" AutomationProperties.Name="Output format for this file"
+                                              Visibility="{Binding DataContext.PerFileOptions, RelativeSource={RelativeSource AncestorType=UserControl}, Converter={StaticResource BoolToVisibility}}" />
+                                    <StackPanel Grid.Column="3" Orientation="Horizontal">
                                         <Button Content="&#xE70E;" Style="{StaticResource IconButton}" ToolTip="Move up" Width="28" Height="28"
                                                 Command="{Binding DataContext.MoveUpCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" CommandParameter="{Binding}" />
                                         <Button Content="&#xE70D;" Style="{StaticResource IconButton}" ToolTip="Move down" Width="28" Height="28"
                                                 Command="{Binding DataContext.MoveDownCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" CommandParameter="{Binding}" />
                                     </StackPanel>
-                                    <Button Grid.Column="3" Content="&#xE711;" Style="{StaticResource IconButton}" ToolTip="Remove from list" Width="28" Height="28"
+                                    <Button Grid.Column="4" Content="&#xE711;" Style="{StaticResource IconButton}" ToolTip="Remove from list" Width="28" Height="28"
                                             Command="{Binding DataContext.RemoveFileCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" CommandParameter="{Binding}" />
                                 </Grid>
                             </DataTemplate>
@@ -188,6 +191,8 @@
                 </Border>
                 <TextBlock Text="Analyzing files…" Style="{StaticResource Text.Caption}" Margin="0,8,0,0"
                            Visibility="{Binding IsAnalyzing, Converter={StaticResource BoolToVisibility}}" />
+                <CheckBox Content="Different target and options for each file" IsChecked="{Binding PerFileOptions}" Margin="4,10,0,0"
+                          Visibility="{Binding HasSeveralFiles, Converter={StaticResource BoolToVisibility}}" />
 
                 <!-- Output format -->
                 <StackPanel Margin="0,20,0,0" Visibility="{Binding HasFiles, Converter={StaticResource BoolToVisibility}}">
@@ -251,7 +256,6 @@
                                 <TextBlock Text="{Binding OptionsScopeText}" Style="{StaticResource Text.Caption}" />
                             </StackPanel>
                         </DockPanel>
-                        <CheckBox Content="Different options for each file" IsChecked="{Binding PerFileOptions}" Margin="0,10,0,0" />
 
                         <!-- Image -->
                         <StackPanel Style="{StaticResource OptionGroup}" Visibility="{Binding ShowImageOptions, Converter={StaticResource BoolToVisibility}}">
@@ -311,6 +315,23 @@
                                     <CheckBox Content="Remove audio" IsChecked="{Binding EditingOptions.Video.RemoveAudio}" Margin="0,18,0,0" />
                                 </StackPanel>
                             </Grid>
+                            <TextBlock Text="Trim (hh:mm:ss)" Style="{StaticResource OptionLabel}" />
+                            <Grid>
+                                <Grid.ColumnDefinitions><ColumnDefinition /><ColumnDefinition Width="12" /><ColumnDefinition /></Grid.ColumnDefinitions>
+                                <TextBox Text="{Binding EditingOptions.Video.TrimStart, TargetNullValue={x:Static sys:String.Empty}}" AutomationProperties.Name="Trim start" ToolTip="Start time, for example 00:00:05" />
+                                <TextBox Grid.Column="2" Text="{Binding EditingOptions.Video.TrimEnd, TargetNullValue={x:Static sys:String.Empty}}" AutomationProperties.Name="Trim end" ToolTip="End time, for example 00:01:30" />
+                            </Grid>
+                            <Grid Margin="0,12,0,0">
+                                <Grid.ColumnDefinitions><ColumnDefinition /><ColumnDefinition Width="12" /><ColumnDefinition /></Grid.ColumnDefinitions>
+                                <StackPanel>
+                                    <TextBlock Text="Subtitles" Style="{StaticResource OptionLabel}" />
+                                    <ComboBox ItemsSource="{Binding SubtitleModes}" DisplayMemberPath="Label" SelectedValuePath="Value" SelectedValue="{Binding EditingOptions.Video.Subtitles}" AutomationProperties.Name="Subtitle handling" />
+                                </StackPanel>
+                                <StackPanel Grid.Column="2">
+                                    <TextBlock Text="Subtitle track (0, 1, 2...)" Style="{StaticResource OptionLabel}" />
+                                    <TextBox Text="{Binding EditingOptions.Video.SubtitleStreamIndex, TargetNullValue={x:Static sys:String.Empty}}" AutomationProperties.Name="Subtitle track" />
+                                </StackPanel>
+                            </Grid>
                         </StackPanel>
 
                         <!-- GIF -->
@@ -338,6 +359,12 @@
                                     <ComboBox ItemsSource="{Binding ChannelChoices}" DisplayMemberPath="Label" SelectedValuePath="Value" SelectedValue="{Binding EditingOptions.Audio.Channels}" AutomationProperties.Name="Channels" />
                                 </StackPanel>
                             </Grid>
+                            <TextBlock Text="Trim (hh:mm:ss)" Style="{StaticResource OptionLabel}" />
+                            <Grid>
+                                <Grid.ColumnDefinitions><ColumnDefinition /><ColumnDefinition Width="12" /><ColumnDefinition /></Grid.ColumnDefinitions>
+                                <TextBox Text="{Binding EditingOptions.Audio.TrimStart, TargetNullValue={x:Static sys:String.Empty}}" AutomationProperties.Name="Trim start" />
+                                <TextBox Grid.Column="2" Text="{Binding EditingOptions.Audio.TrimEnd, TargetNullValue={x:Static sys:String.Empty}}" AutomationProperties.Name="Trim end" />
+                            </Grid>
                         </StackPanel>
 
                         <!-- PDF -->
@@ -359,6 +386,13 @@
                         <StackPanel Style="{StaticResource OptionGroup}" Visibility="{Binding ShowPdfCompression, Converter={StaticResource BoolToVisibility}}">
                             <TextBlock Text="Compression" Style="{StaticResource OptionLabel}" />
                             <ComboBox ItemsSource="{Binding PdfCompressionLevels}" DisplayMemberPath="Label" SelectedValuePath="Value" SelectedValue="{Binding EditingOptions.Pdf.Compression}" AutomationProperties.Name="Compression level" />
+                        </StackPanel>
+                        <StackPanel Style="{StaticResource OptionGroup}" Visibility="{Binding ShowPdfOcr, Converter={StaticResource BoolToVisibility}}">
+                            <TextBlock Text="OCR language" Style="{StaticResource OptionLabel}" />
+                            <ComboBox ItemsSource="{Binding OcrLanguages}" DisplayMemberPath="Label" SelectedValuePath="Value"
+                                      SelectedValue="{Binding EditingOptions.Pdf.OcrLanguage}" AutomationProperties.Name="OCR language" />
+                            <TextBlock Text="OCR runs locally. The selected language data must be available in Ghostscript."
+                                       Style="{StaticResource Hint}" Margin="0,6,0,0" TextWrapping="Wrap" />
                         </StackPanel>
 
                         <!-- Document -->

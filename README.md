@@ -40,7 +40,7 @@ Want a version that does not install? Download **`OrbitConvert-<version>-win-x64
 extract it to a folder and run `OrbitConvert.exe`. The app is self-contained; .NET is not required.
 
 After installation, open **Settings → Conversion tools**. Images, ZIP and core PDF tools work
-immediately. Use the Download buttons to add FFmpeg, Pandoc or 7-Zip when you need their formats.
+immediately. Use the Download buttons to add FFmpeg, Pandoc, 7-Zip, LibreOffice or Ghostscript when needed.
 
 <p align="center">
   <img src="assets/screenshots/radial-menu.png" width="360" alt="Radial menu offering formats for a video file">
@@ -62,12 +62,11 @@ immediately. Use the Download buttons to add FFmpeg, Pandoc or 7-Zip when you ne
   7-Zip. Nothing is "converted" by renaming extensions. Every output is checked before it is saved.
 - **Content-based detection**: files are identified by their bytes, not their extension, and a
   mismatched extension is flagged.
-- **Batch processing** with bounded parallelism, per-file or shared options, pause/resume for waiting
+- **Batch processing** with bounded parallelism, a different target and options for every file, pause/resume for waiting
   jobs, cancel, retry and reorder (for PDF merging).
-- **PDF tools**: merge, split, extract pages, rotate, compress, images → PDF, PDF → images, metadata.
-- **Image tools**: crop (free, 1:1, 16:9, 4:3, 3:4) and add background (gradient, padding, rounded
-  corners, shadow) in small floating editors; shrink in the same format; strip EXIF/GPS from JPG and PNG
-  without re-encoding. After a crop, the Orbit Menu reopens on the new file so you can keep going.
+- **PDF tools**: merge, split, extract, thumbnail reorder/remove/rotate, compress, local OCR, images → PDF and PDF → images.
+- **Image tools**: crop and backgrounds plus a live editor for resize, flip, brightness, contrast,
+  flattened text/arrows/shapes, permanent pixel redaction, and selective EXIF/GPS inspection/removal.
 - **Presets**: six built-ins (e.g. "Optimize for web", "Video for WhatsApp") plus your own, saved from
   the Convert page. Starred presets appear in the Orbit Menu for files they apply to.
 - **Watch folders** *(off until you turn one on)*: convert new files in a folder with a preset. Files
@@ -80,7 +79,8 @@ immediately. Use the Download buttons to add FFmpeg, Pandoc or 7-Zip when you ne
   checks.
 - **Safe by default**: originals are never overwritten; outputs appear atomically; failed or canceled
   conversions leave nothing behind; child processes are killed with their job object.
-- **History**, light/dark themes that follow Windows, notifications, and a command-line tool.
+- **Media editing**: precise start/end trimming and MKV subtitle copy/drop/track selection.
+- **English and Arabic** UI with proper RTL layout, light/dark themes, notifications, and a command-line tool.
 
 ## Screenshots
 
@@ -102,25 +102,25 @@ What appears depends on what is installed. Unavailable targets are shown disable
 
 | Category | From | To | Engine |
 |---|---|---|---|
-| Images | JPG, PNG, WebP, BMP, TIFF, GIF, HEIC/HEIF, AVIF, ICO | JPG, PNG, WebP, BMP, TIFF, GIF, AVIF, ICO, PDF | ImageMagick (bundled) |
+| Images | JPG, PNG, WebP, BMP, TIFF, GIF, HEIC/HEIF, AVIF, ICO | JPG, PNG, WebP, BMP, TIFF, GIF, AVIF, ICO, PDF; HEIC when the bundled writer passes a real encode probe | ImageMagick (bundled) |
 | Video | MP4, MKV, MOV, AVI, WebM, GIF | MP4, MKV, MOV, AVI, WebM, GIF; “Compress” (same format, smaller) | FFmpeg |
 | Audio | MP3, WAV, FLAC, AAC, OGG, M4A, Opus — and the audio track of any video | MP3, WAV, FLAC, AAC, OGG, M4A, Opus | FFmpeg |
 | Documents | Markdown, HTML, DOCX, ODT, EPUB, TXT | DOCX, HTML, Markdown, ODT, EPUB, TXT | Pandoc |
 | Documents | DOCX, DOC, ODT, RTF, TXT, HTML | PDF; DOCX ↔ ODT; DOC/RTF → DOCX, ODT, TXT | LibreOffice |
 | Documents | Markdown, EPUB | PDF | Pandoc + LibreOffice |
 | PDF | PDF | DOCX — **experimental**, see limitations | LibreOffice |
-| PDF | PDF | Merge, split, extract pages, rotate, compress, PNG/JPG/WebP pages | PDFsharp + PDFium (bundled) |
+| PDF | PDF | Merge, split, extract, reorder/remove/rotate, compress, OCR, PNG/JPG/WebP pages | PDFsharp + PDFium; Ghostscript for OCR/lossy compression |
 | PDF | Images | One PDF (a page per image) | Bundled |
 | Archives | Any files | ZIP (bundled), 7z (7-Zip) | |
 | Archives | ZIP, 7z | Extract to a folder, verify integrity | Bundled |
 
 **Options**: image quality, resize (never upscales), crop, rotate, metadata removal, sRGB conversion,
 transparency background; video resolution presets, quality, codec (H.264, H.265, VP9, AV1), frame rate,
-audio removal, GIF frame rate/width; audio bitrate, sample rate, channels; PDF page ranges, rotation,
+trim and subtitles, audio removal, GIF frame rate/width; audio bitrate, trim, sample rate, channels; PDF page ranges, rotation,
 render DPI, compression level; archive name and compression level.
 
-**Not supported** (and not pretended): HEIC *output* (the bundled ImageMagick cannot write it), OCR,
-editable reconstruction of scanned PDFs, password-protected PDFs and archives, DRM-protected media.
+**Not supported** (and not pretended): editable reconstruction of scanned PDFs, password-protected PDFs
+and archives, DRM-protected media. HEIC output stays disabled unless a real sample encode succeeds.
 
 ## Verify a download
 
@@ -143,7 +143,7 @@ tools remain in `%LOCALAPPDATA%\OrbitConvert`; delete that folder too if you wan
 
 ### System requirements
 
-- Windows 10 or Windows 11, 64-bit (x64), on a version still supported by .NET 10
+- Windows 10 or Windows 11, 64-bit (x64 or ARM64), on a version still supported by .NET 10
 - About 300 MB of disk space, plus space for optional tools (FFmpeg ≈ 300 MB unpacked)
 
 ## Use it
@@ -151,8 +151,8 @@ tools remain in `%LOCALAPPDATA%\OrbitConvert`; delete that folder too if you wan
 - **From File Explorer**: right-click files → *Convert with OrbitConvert* (Windows 11: *Show more
   options* first), or *Send to → OrbitConvert*, or select files and press <kbd>Win</kbd>+<kbd>Shift</kbd>+<kbd>C</kbd>.
 - **From the app**: drop files on the window, pick a target, adjust options, press *Start conversion*.
-- **Batch**: add many files; targets shown are the ones all files share. Files already in the target
-  format are skipped.
+- **Batch**: add many files for one shared target, or enable **Different target and options for each file**
+  for a mixed batch. Files already in the target format are skipped.
 
 ### Command line
 
@@ -185,6 +185,7 @@ dotnet build OrbitConvert.sln -c Release
 dotnet test OrbitConvert.sln -c Release
 dotnet run --project src/OrbitConvert.App          # start the desktop app
 pwsh scripts/build-release.ps1                     # MSI + portable ZIP + checksums in artifacts\release
+pwsh scripts/build-release.ps1 -Runtime win-arm64  # ARM64 artifacts
 ```
 
 Integration tests that need FFmpeg, Pandoc, LibreOffice, 7-Zip or Ghostscript are **skipped** (not failed) when the
@@ -195,7 +196,7 @@ tool is missing. Point `ORBITCONVERT_TOOLS_DIR` at a folder containing the tools
 
 Verified by the maintainers on Windows 11 (build 26300, x64, 150 % scaling, single monitor):
 
-- The solution builds with zero warnings; **236 automated tests pass** (89 core, 119 converter and 28
+- The solution builds with zero warnings; **248 automated tests pass** (89 core, 131 converter and 28
   integration tests with real FFmpeg 9.0.2, Pandoc 3.12.1, LibreOffice 26.8.1.1, 7-Zip 26.04 and
   Ghostscript 10.08.0).
 - The app launches; the radial menu opens from the command line and from the Explorer shell verb, and
@@ -243,8 +244,7 @@ Contributions are welcome: bug reports, translations, new converters and tests. 
 ## Roadmap
 
 Highlights from [docs/ROADMAP.md](docs/ROADMAP.md): signed releases and an MSIX package with a
-Windows 11 top-level context-menu entry, translations, a live preview for image options, more
-document routes, and ARM64 builds.
+Windows 11 top-level context-menu entry, more translations and document routes.
 
 ## License
 

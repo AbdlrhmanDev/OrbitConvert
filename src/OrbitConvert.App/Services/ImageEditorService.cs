@@ -59,4 +59,27 @@ public sealed class ImageEditorService(
             notifications.Show("Could not open background editor", Core.Conversion.ErrorTranslator.ToUserMessage(ex), null);
         }
     }
+
+    public void OpenEditor(string path, string mode = "edit")
+    {
+        try
+        {
+            var vm = new ImageEditViewModel(path, editor, mode);
+            var window = new ImageEditWindow(vm);
+            vm.CloseRequested += (_, _) => window.Close();
+            vm.Saved += (_, result) =>
+            {
+                window.Close();
+                notifications.Show("Saved " + Path.GetFileName(result.Path), "Edits flattened · original kept", result.Path);
+                ShellLauncher.RevealInExplorer(result.Path);
+            };
+            window.Show();
+            window.Activate();
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Could not open image editor for {Path}", path);
+            notifications.Show("Could not open image editor", Core.Conversion.ErrorTranslator.ToUserMessage(ex), null);
+        }
+    }
 }

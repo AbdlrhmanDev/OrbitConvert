@@ -41,7 +41,9 @@
 
   <!-- License and notice files required by bundled third-party components; every build ships them in .\licenses. -->
   <PropertyGroup>
-    <DotNetRuntimeNotice>$(NuGetPackageRoot)microsoft.netcore.app.runtime.win-x64\$(BundledNETCoreAppPackageVersion)\THIRD-PARTY-NOTICES.TXT</DotNetRuntimeNotice>
+    <NoticeRuntime Condition="'$(RuntimeIdentifier)' == ''">win-x64</NoticeRuntime>
+    <NoticeRuntime Condition="'$(RuntimeIdentifier)' != ''">$(RuntimeIdentifier)</NoticeRuntime>
+    <DotNetRuntimeNotice>$(NuGetPackageRoot)microsoft.netcore.app.runtime.$(NoticeRuntime)\$(BundledNETCoreAppPackageVersion)\THIRD-PARTY-NOTICES.TXT</DotNetRuntimeNotice>
   </PropertyGroup>
   <ItemGroup>
     <None Include="$(PkgMagick_NET-Q8-AnyCPU)\Notice.txt" Link="licenses\Magick.NET-ImageMagick-and-delegate-libraries.txt" CopyToOutputDirectory="PreserveNewest" />
@@ -55,6 +57,7 @@
     <Resource Include="Assets\logo.png" />
     <Resource Include="Assets\logo-256.png" />
     <Resource Include="Assets\mark-128.png" />
+    <Resource Include="Localization\Strings.*.xaml" />
     <!-- Bricolage Grotesque and JetBrains Mono (SIL OFL 1.1); regenerate with scripts/make-fonts.py. -->
     <Resource Include="Assets\Fonts\*.ttf" />
     <None Include="appsettings.json" CopyToOutputDirectory="PreserveNewest" />

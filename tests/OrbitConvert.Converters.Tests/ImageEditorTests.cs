@@ -110,4 +110,58 @@ public sealed class ImageEditorTests : IDisposable
         await Assert.ThrowsAsync<ConversionException>(() =>
             _editor.CropAsync(input, new CropEditRequest(300, 170, 50, 50), CancellationToken.None));
     }
+
+    [Fact]
+    public async Task Edit_flattens_adjustments_annotations_and_redactions_without_touching_source()
+    {
+        var input = MakeImage();
+        var original = File.ReadAllBytes(input);
+        var request = new ImageEditRequest(
+            160, 90, 0, ImageFlip.Horizontal, 10, 12,
+            [new ImageAnnotation(ImageAnnotationKind.Rectangle, .05, .05, .35, .35, "#00FF00", 5)],
+            [new ImageRedaction(.50, .20, .25, .30)]);
+
+        var output = await _editor.EditAsync(input, request, CancellationToken.None);
+
+        Assert.Equal(original, File.ReadAllBytes(input));
+        Assert.EndsWith("source-edit.png", output);
+        using var result = new MagickImage(output);
+        Assert.Equal(160u, result.Width);
+        Assert.Equal(90u, result.Height);
+        var redacted = result.GetPixels().GetPixel(90, 30).ToColor()!;
+        Assert.True(redacted.R < 5 && redacted.G < 5 && redacted.B < 5, $"redaction must be flattened black, was {redacted}");
+    }
+
+    [Fact]
+    public async Task Edit_rejects_invalid_normalized_geometry()
+    {
+        var input = MakeImage();
+        var request = new ImageEditRequest(null, null, 0, ImageFlip.None, 0, 0, [],
+            [new ImageRedaction(.9, .9, .5, .5)]);
+
+        await Assert.ThrowsAsync<ConversionException>(() => _editor.EditAsync(input, request, CancellationToken.None));
+    }
+
+    [Fact]
+    public async Task Metadata_can_be_listed_and_removed_selectively()
+    {
+        var input = _dir.Combine("metadata.jpg");
+        using (var image = new MagickImage(MagickColors.Blue, 80, 60))
+        {
+            var exif = new ExifProfile();
+            exif.SetValue(ExifTag.Artist, "Orbit tester");
+            exif.SetValue(ExifTag.Copyright, "Keep me");
+            image.SetProfile(exif);
+            image.Write(input, MagickFormat.Jpeg);
+        }
+
+        var fields = _editor.ReadMetadata(input);
+        Assert.Contains(fields, x => x.Key == "Artist" && x.Value.Contains("Orbit tester"));
+        Assert.Contains(fields, x => x.Key == "Copyright");
+
+        var output = await _editor.RemoveMetadataAsync(input, new HashSet<string> { "Artist" }, false, CancellationToken.None);
+        var retained = _editor.ReadMetadata(output);
+        Assert.DoesNotContain(retained, x => x.Key == "Artist");
+        Assert.Contains(retained, x => x.Key == "Copyright");
+    }
 }

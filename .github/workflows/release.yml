@@ -1,6 +1,6 @@
 name: Release
 
-# Runs when a version tag such as v0.2.0 is pushed. Creates a GitHub release with the MSI, the
+# Runs when a version tag such as v0.3.0 is pushed. Creates x64/ARM64 installers, portable builds and checksums.
 # portable ZIP and SHA256SUMS.txt. Binaries are NOT code-signed; the release notes say so.
 on:
   push:
@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: "Existing tag to release (e.g. v0.2.0)"
+        description: "Existing tag to release (e.g. v0.3.0)"
         required: true
 
 permissions:
@@ -50,7 +50,9 @@ jobs:
 
       - name: Test and package
         shell: pwsh
-        run: ./scripts/build-release.ps1 -Version $env:VERSION
+        run: |
+          ./scripts/build-release.ps1 -Version $env:VERSION -Runtime win-x64
+          ./scripts/build-release.ps1 -Version $env:VERSION -Runtime win-arm64 -SkipTests -AppendArtifacts
 
       - name: Create GitHub release
         shell: pwsh
@@ -63,6 +65,8 @@ jobs:
           **Downloads**
           - ``OrbitConvert-$env:VERSION-win-x64.msi`` — per-user installer, no admin rights needed
           - ``OrbitConvert-$env:VERSION-win-x64-portable.zip`` — portable build
+          - ``OrbitConvert-$env:VERSION-win-arm64.msi`` — ARM64 installer
+          - ``OrbitConvert-$env:VERSION-win-arm64-portable.zip`` — ARM64 portable build
           - ``SHA256SUMS.txt`` — verify with ``Get-FileHash <file> -Algorithm SHA256``
 
           **Updating from an earlier version**

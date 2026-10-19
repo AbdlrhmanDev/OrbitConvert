@@ -68,6 +68,16 @@ public enum VideoQuality { High, Balanced, Small }
 
 public enum VideoCodec { Auto, H264, H265, VP9, AV1 }
 
+public enum SubtitleMode
+{
+    /// <summary>Do not include subtitle tracks in the output.</summary>
+    DropAll,
+    /// <summary>Copy every compatible subtitle track without re-encoding.</summary>
+    CopyAll,
+    /// <summary>Copy one subtitle track by its zero-based subtitle-stream index.</summary>
+    Select,
+}
+
 public sealed class VideoOptions
 {
     public VideoResolution Resolution { get; set; } = VideoResolution.Original;
@@ -79,6 +89,15 @@ public sealed class VideoOptions
 
     public bool RemoveAudio { get; set; }
     public int AudioBitrateKbps { get; set; } = 160;
+
+    /// <summary>Optional inclusive start position. Null starts at the beginning.</summary>
+    public TimeSpan? TrimStart { get; set; }
+
+    /// <summary>Optional exclusive end position. Must be later than <see cref="TrimStart"/>.</summary>
+    public TimeSpan? TrimEnd { get; set; }
+
+    public SubtitleMode Subtitles { get; set; } = SubtitleMode.DropAll;
+    public int? SubtitleStreamIndex { get; set; }
 
     public int GifFps { get; set; } = 12;
     public int GifMaxWidth { get; set; } = 480;
@@ -108,6 +127,9 @@ public sealed class AudioOptions
     /// <summary>1 = mono, 2 = stereo; null keeps the source layout.</summary>
     public int? Channels { get; set; }
 
+    public TimeSpan? TrimStart { get; set; }
+    public TimeSpan? TrimEnd { get; set; }
+
     public AudioOptions Clone() => (AudioOptions)MemberwiseClone();
 }
 
@@ -135,6 +157,9 @@ public sealed class PdfOptions
     public int ImageDpi { get; set; } = 150;
 
     public PdfCompressionLevel Compression { get; set; } = PdfCompressionLevel.Lossless;
+
+    /// <summary>Ghostscript OCR language code, such as eng or ara.</summary>
+    public string OcrLanguage { get; set; } = "eng";
 
     public PdfOptions Clone() => (PdfOptions)MemberwiseClone();
 }

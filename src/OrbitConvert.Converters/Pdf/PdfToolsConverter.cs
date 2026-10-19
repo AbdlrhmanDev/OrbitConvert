@@ -23,6 +23,7 @@ public sealed class PdfToolsConverter : IConverter
     public const string ExtractKey = "pdf-extract";
     public const string RotateKey = "pdf-rotate";
     public const string CompressKey = "pdf-compress";
+    public const string OcrKey = "pdf-ocr";
 
     private static readonly IReadOnlySet<string> PdfOnly = ConversionRoute.Formats(KnownFormats.Pdf);
 
@@ -49,9 +50,12 @@ public sealed class PdfToolsConverter : IConverter
             new() { TargetKey = CompressKey, Label = "Compress", Kind = RouteKind.Transform, Inputs = PdfOnly,
                     Output = KnownFormats.Pdf, Priority = 73, Description = "Make the PDF smaller",
                     Limitations = "Lossless mode only removes waste and recompresses streams; large savings need Ghostscript's Balanced or Strong mode, which recompresses images." },
-            RenderRoute(KnownFormats.Png, 74),
-            RenderRoute(KnownFormats.Jpeg, 75),
-            RenderRoute(KnownFormats.WebP, 76),
+            new() { TargetKey = OcrKey, Label = "OCR", Kind = RouteKind.Transform, Inputs = PdfOnly,
+                    Output = KnownFormats.Pdf, Priority = 74, Description = "Make scanned text searchable locally with Ghostscript OCR",
+                    Limitations = "Requires Ghostscript with OCR language data. Complex page layouts may need manual review." },
+            RenderRoute(KnownFormats.Png, 75),
+            RenderRoute(KnownFormats.Jpeg, 76),
+            RenderRoute(KnownFormats.WebP, 77),
         ];
     }
 
@@ -70,7 +74,9 @@ public sealed class PdfToolsConverter : IConverter
     public string DisplayName => "PDF tools (PDFsharp, PDFium)";
     public IReadOnlyList<ConversionRoute> Routes { get; }
 
-    public RouteAvailability GetAvailability(ConversionRoute route) => RouteAvailability.Available;
+    public RouteAvailability GetAvailability(ConversionRoute route) => route.TargetKey == OcrKey && _tools.Find(ExternalTool.Ghostscript) is null
+        ? RouteAvailability.Unavailable("OCR requires Ghostscript. Install it from Settings → Conversion tools.")
+        : RouteAvailability.Available;
 
     public void ValidateOptions(ConversionRoute route, IReadOnlyList<InputFile> inputs, ConversionOptions options)
     {
@@ -90,6 +96,7 @@ public sealed class PdfToolsConverter : IConverter
             ExtractKey => Run(() => ExtractPages(context)),
             RotateKey => Run(() => Rotate(context)),
             CompressKey => CompressAsync(context, cancellationToken),
+            OcrKey => OcrAsync(context, cancellationToken),
             _ => Run(() => Render(context, cancellationToken)),
         };
 
@@ -104,6 +111,32 @@ public sealed class PdfToolsConverter : IConverter
                 throw new ConversionException(DescribeReadError(ex), ex, ex.Message);
             }
         });
+    }
+
+    private async Task<IReadOnlyList<string>> OcrAsync(ConversionContext context, CancellationToken ct)
+    {
+        var gs = _tools.Find(ExternalTool.Ghostscript)
+            ?? throw new ConversionException("OCR requires Ghostscript. Install it from Settings → Conversion tools.");
+        var language = context.Options.Pdf.OcrLanguage.Trim().ToLowerInvariant();
+        if (language.Length is < 2 or > 12 || language.Any(c => !char.IsAsciiLetter(c) && c != '+'))
+        {
+            throw new ConversionException("Choose a valid OCR language code, for example eng or ara.");
+        }
+        var temporary = Path.Combine(context.WorkDirectory, "ocr-output.pdf");
+        var result = await _runner.RunAsync(new ProcessSpec(gs,
+        [
+            "-dSAFER", "-dBATCH", "-dNOPAUSE", "-dQUIET", "-sDEVICE=pdfocr24", "-r300",
+            "-sOCRLanguage=" + language, "-sOutputFile=" + temporary, "-f", Path.GetFullPath(context.Input.Path),
+        ]) { WorkingDirectory = context.WorkDirectory, Timeout = TimeSpan.FromMinutes(30) }, ct).ConfigureAwait(false);
+        if (!result.Succeeded || !File.Exists(temporary))
+        {
+            throw new ConversionException("OCR could not process this PDF. Check that Ghostscript has the selected language data.",
+                technicalDetail: result.StandardErrorTail);
+        }
+        var path = context.WorkPath(context.Input.BaseName, ".pdf", "-searchable");
+        File.Move(temporary, path);
+        context.ResultNote = $"Searchable text added ({language})";
+        return [path];
     }
 
     private static PdfDocument Open(InputFile input, PdfDocumentOpenMode mode)

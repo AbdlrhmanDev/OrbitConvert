@@ -62,6 +62,7 @@ public sealed partial class SettingsViewModel : ObservableObject
     private readonly UpdateChecker _updates;
     private readonly UpdateInstaller _updateInstaller;
     private readonly ThemeManager _theme;
+    private readonly LanguageManager _language;
     private readonly ActivationService _activation;
     private readonly IHistoryStore _history;
     private readonly DialogService _dialogs;
@@ -70,7 +71,7 @@ public sealed partial class SettingsViewModel : ObservableObject
 
     public SettingsViewModel(ISettingsStore store, IToolLocator locator, DependencyInstaller installer, UpdateChecker updates,
         UpdateInstaller updateInstaller,
-        ThemeManager theme, ActivationService activation, IHistoryStore history, DialogService dialogs, AppPaths paths,
+        ThemeManager theme, LanguageManager language, ActivationService activation, IHistoryStore history, DialogService dialogs, AppPaths paths,
         ILogger<SettingsViewModel> logger)
     {
         _store = store;
@@ -79,6 +80,7 @@ public sealed partial class SettingsViewModel : ObservableObject
         _updates = updates;
         _updateInstaller = updateInstaller;
         _theme = theme;
+        _language = language;
         _activation = activation;
         _history = history;
         _dialogs = dialogs;
@@ -162,12 +164,16 @@ public sealed partial class SettingsViewModel : ObservableObject
         }
     }
 
-    public IReadOnlyList<Choice<string>> Languages { get; } = [new("English", "en")];
+    public IReadOnlyList<Choice<string>> Languages { get; } = [new("English", "en"), new("العربية", "ar")];
 
     public string Language
     {
         get => S.Language;
-        set => Update(s => s.Language = value, nameof(Language));
+        set
+        {
+            Update(s => s.Language = value, nameof(Language));
+            _language.Apply(value);
+        }
     }
 
     // Activation
@@ -510,7 +516,9 @@ public sealed partial class SettingsViewModel : ObservableObject
         var consent = _dialogs.Confirm($"Download {package.Name}?",
             $"OrbitConvert will download {package.Name} {package.Version} from:\n{package.DownloadUrl}\n\n" +
             $"License: {package.License}\n\n" +
-            $"The download is verified against a pinned SHA-256 checksum and stored only for OrbitConvert in:\n{_installer.InstallDirectory(package)}\n\n" +
+            (package.ExternalInstaller
+                ? "The download is verified against a pinned SHA-256 checksum, then its official installer opens. Windows may ask for permission.\n\n"
+                : $"The download is verified against a pinned SHA-256 checksum and stored only for OrbitConvert in:\n{_installer.InstallDirectory(package)}\n\n") +
             "No information about you or your files is sent. Continue?");
         if (!consent)
         {

@@ -16,11 +16,13 @@ public partial class MainWindow : Window
     private const int DwmwaTextColor = 36;
 
     private readonly ThemeManager _themeManager;
+    private readonly LanguageManager _languageManager;
 
-    public MainWindow(MainViewModel viewModel, ThemeManager themeManager)
+    public MainWindow(MainViewModel viewModel, ThemeManager themeManager, LanguageManager languageManager)
     {
         InitializeComponent();
         _themeManager = themeManager;
+        _languageManager = languageManager;
         ViewModel = viewModel;
         DataContext = viewModel;
         DragEnter += OnDragEnter;
@@ -30,6 +32,7 @@ public partial class MainWindow : Window
         SourceInitialized += (_, _) => ApplyTitleBarColors();
         StateChanged += (_, _) => UpdateMaximizedState();
         _themeManager.Changed += OnThemeChanged;
+        _languageManager.Enable(this);
         Closed += (_, _) => _themeManager.Changed -= OnThemeChanged;
     }
 
