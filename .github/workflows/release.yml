@@ -1,6 +1,6 @@
 name: Release
 
-# Runs when a version tag such as v0.1.0 is pushed. Creates a GitHub release with the MSI, the
+# Runs when a version tag such as v0.2.0 is pushed. Creates a GitHub release with the MSI, the
 # portable ZIP and SHA256SUMS.txt. Binaries are NOT code-signed; the release notes say so.
 on:
   push:
@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: "Existing tag to release (e.g. v0.1.0)"
+        description: "Existing tag to release (e.g. v0.2.0)"
         required: true
 
 permissions:
@@ -65,10 +65,14 @@ jobs:
           - ``OrbitConvert-$env:VERSION-win-x64-portable.zip`` — portable build
           - ``SHA256SUMS.txt`` — verify with ``Get-FileHash <file> -Algorithm SHA256``
 
+          **Updating from an earlier version**
+          Open Settings → Updates → Check now → Download and install. OrbitConvert verifies the
+          installer checksum before starting Windows Installer.
+
           These binaries are **not code-signed**; Windows SmartScreen may warn about an unknown publisher.
           FFmpeg, Pandoc, LibreOffice, 7-Zip and Ghostscript are not included — see the README.
           Third-party licenses: NOTICE.md and the licenses folder inside each package.
           "@
           $extra = @()
-          if ($env:VERSION -match '^0[.]|-') { $extra += "--prerelease" }
+          if ($env:VERSION -match '-') { $extra += "--prerelease" }
           gh release create $env:TAG (Get-ChildItem artifacts/release/*).FullName --title "OrbitConvert $env:VERSION" --notes $notes @extra

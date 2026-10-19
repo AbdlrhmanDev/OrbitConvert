@@ -27,7 +27,7 @@ Items are listed by priority. Nothing here is implemented yet unless marked done
 - ARM64 builds.
 - winget manifest.
 
-## Done since 0.1.0 (unreleased)
+## Done in 0.2.0
 
 - Identity v1.0: Ion Lime on Void, Bricolage Grotesque + JetBrains Mono, orbit mark and icon.
 - Orbit Menu redesign with chaining (PDF → JPG → Actions → Crop/Background) and image actions
@@ -37,6 +37,8 @@ Items are listed by priority. Nothing here is implemented yet unless marked done
 - Presets (six built-ins plus user presets; starred presets in the Orbit Menu).
 - Watch folders (opt-in), with write-settling and self-output protection.
 - Start with Windows (per-user Run key) and Reduce motion settings.
+- Checksum-verified, one-click updates from GitHub Releases.
+- Full real-tool integration coverage for FFmpeg, Pandoc, LibreOffice, 7-Zip and Ghostscript.
 
 ## Done in 0.1.0
 

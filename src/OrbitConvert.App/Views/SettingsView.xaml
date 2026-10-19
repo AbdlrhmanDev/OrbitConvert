@@ -19,7 +19,7 @@
     <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
         <StackPanel Margin="32" MaxWidth="880" HorizontalAlignment="Left">
             <TextBlock Text="Settings" Style="{StaticResource Text.Display}" Margin="0,0,0,4" />
-            <TextBlock Text="Files never leave this PC. The app goes online only when you download a tool or turn on update checks." Style="{StaticResource Text.Secondary}" FontSize="14" Foreground="{DynamicResource Brush.TextTertiary}" Margin="0,0,0,22" />
+            <TextBlock Text="Files never leave this PC. The app goes online only for downloads and update checks that you request." Style="{StaticResource Text.Secondary}" FontSize="14" Foreground="{DynamicResource Brush.TextTertiary}" Margin="0,0,0,22" />
 
             <!-- Output -->
             <Border Style="{StaticResource SectionCard}">
@@ -197,7 +197,7 @@
                 <StackPanel>
                     <TextBlock Text="Privacy" Style="{StaticResource Text.Subtitle}" Margin="0,0,0,6" />
                     <TextBlock Style="{StaticResource Text.Secondary}" TextWrapping="Wrap" Margin="0,0,0,10"
-                               Text="OrbitConvert converts everything on this computer. It has no account, no analytics and no telemetry, and never uploads your files. It only connects to the internet when you click Download for a tool or opt in to update checks." />
+                               Text="OrbitConvert converts everything on this computer. It has no account, analytics or telemetry, and never uploads your files. It connects only for tool downloads and update actions that you request." />
                     <CheckBox Content="Keep a history of conversions (stored locally)" IsChecked="{Binding KeepHistory}" />
                     <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
                         <Button Content="Open data folder" Command="{Binding OpenDataFolderCommand}" Margin="0,0,8,0" />
@@ -214,12 +214,15 @@
                     <CheckBox Content="Check GitHub for new versions (off by default)" IsChecked="{Binding CheckForUpdates}" />
                     <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
                         <Button Content="Check now" Command="{Binding CheckNowCommand}" />
+                        <Button Content="Download and install" Margin="8,0,0,0" Command="{Binding InstallUpdateCommand}"
+                                Visibility="{Binding CanInstallUpdate, Converter={StaticResource BoolToVisibility}}"
+                                IsEnabled="{Binding IsInstallingUpdate, Converter={StaticResource InverseBool}}" />
                         <Button Content="Open release page" Margin="8,0,0,0" Command="{Binding OpenUpdateCommand}"
                                 Visibility="{Binding UpdateUrl, Converter={StaticResource NullToVisibility}}" />
                     </StackPanel>
                     <TextBlock Text="{Binding UpdateStatus}" Style="{StaticResource Hint}" Margin="0,6,0,0"
                                Visibility="{Binding UpdateStatus, Converter={StaticResource NullToVisibility}}" />
-                    <TextBlock Text="OrbitConvert never installs updates by itself." Style="{StaticResource Hint}" />
+                    <TextBlock Text="Nothing is downloaded or installed until you click Download and install. Every installer is verified with SHA-256 first." Style="{StaticResource Hint}" />
                 </StackPanel>
             </Border>
 

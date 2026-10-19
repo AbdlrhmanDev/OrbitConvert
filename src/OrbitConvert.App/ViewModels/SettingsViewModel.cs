@@ -1,5 +1,7 @@
 using System.Collections.ObjectModel;
 using System.Diagnostics;
+using System.Net.Http;
+using System.Windows;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Microsoft.Extensions.Logging;
@@ -58,6 +60,7 @@ public sealed partial class SettingsViewModel : ObservableObject
     private readonly IToolLocator _locator;
     private readonly DependencyInstaller _installer;
     private readonly UpdateChecker _updates;
+    private readonly UpdateInstaller _updateInstaller;
     private readonly ThemeManager _theme;
     private readonly ActivationService _activation;
     private readonly IHistoryStore _history;
@@ -66,6 +69,7 @@ public sealed partial class SettingsViewModel : ObservableObject
     private readonly ILogger<SettingsViewModel> _logger;
 
     public SettingsViewModel(ISettingsStore store, IToolLocator locator, DependencyInstaller installer, UpdateChecker updates,
+        UpdateInstaller updateInstaller,
         ThemeManager theme, ActivationService activation, IHistoryStore history, DialogService dialogs, AppPaths paths,
         ILogger<SettingsViewModel> logger)
     {
@@ -73,6 +77,7 @@ public sealed partial class SettingsViewModel : ObservableObject
         _locator = locator;
         _installer = installer;
         _updates = updates;
+        _updateInstaller = updateInstaller;
         _theme = theme;
         _activation = activation;
         _history = history;
@@ -360,11 +365,21 @@ public sealed partial class SettingsViewModel : ObservableObject
     [ObservableProperty]
     private string? _updateUrl;
 
+    [ObservableProperty]
+    private bool _canInstallUpdate;
+
+    [ObservableProperty]
+    private bool _isInstallingUpdate;
+
+    private UpdateInfo? _availableUpdate;
+
     [RelayCommand]
     private async Task CheckNow()
     {
         UpdateStatus = "Checking GitHub for a newer release…";
         UpdateUrl = null;
+        CanInstallUpdate = false;
+        _availableUpdate = null;
         try
         {
             var info = await _updates.CheckAsync(CancellationToken.None);
@@ -377,6 +392,12 @@ public sealed partial class SettingsViewModel : ObservableObject
             {
                 UpdateStatus = $"Version {info.Latest} is available (you have {info.Current}).";
                 UpdateUrl = info.ReleaseUrl;
+                _availableUpdate = info;
+                CanInstallUpdate = info.CanInstall;
+                if (!info.CanInstall)
+                {
+                    UpdateStatus += " Open the release page to download it.";
+                }
             }
             else
             {
@@ -386,6 +407,43 @@ public sealed partial class SettingsViewModel : ObservableObject
         catch (Exception ex) when (ex is System.Net.Http.HttpRequestException or TaskCanceledException or System.Text.Json.JsonException)
         {
             UpdateStatus = "Could not check for updates: " + ex.Message;
+        }
+    }
+
+    [RelayCommand]
+    private async Task InstallUpdate()
+    {
+        var update = _availableUpdate;
+        if (update is null || !update.CanInstall || IsInstallingUpdate)
+        {
+            return;
+        }
+        if (!_dialogs.Confirm("Install update",
+                $"Download OrbitConvert {update.Latest}, verify its SHA-256 checksum, close OrbitConvert and start Windows Installer?"))
+        {
+            return;
+        }
+
+        IsInstallingUpdate = true;
+        CanInstallUpdate = false;
+        try
+        {
+            var progress = new Progress<double>(value => UpdateStatus = $"Downloading update… {value:P0}");
+            var installer = await _updateInstaller.DownloadAsync(update, progress, CancellationToken.None);
+            UpdateStatus = "Checksum verified. Starting Windows Installer…";
+            UpdateInstaller.StartInstaller(installer);
+            Application.Current.Shutdown();
+        }
+        catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException or IOException
+                                   or UnauthorizedAccessException or InvalidOperationException)
+        {
+            UpdateStatus = "The update could not be installed: " + ex.Message;
+            CanInstallUpdate = update.CanInstall;
+            _logger.LogWarning(ex, "Update installation failed");
+        }
+        finally
+        {
+            IsInstallingUpdate = false;
         }
     }
 

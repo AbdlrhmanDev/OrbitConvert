@@ -10,8 +10,9 @@ see the [security policy](../SECURITY.md).
 - Network access happens only when the user:
   - clicks **Download** for a tool (HTTPS to the publisher's release URL; nothing is sent except the
     request itself), or
-  - clicks **Check now** or enables **Check GitHub for new versions** (a single request to the GitHub
-    releases API, at most once a day).
+  - clicks **Check now** or enables **Check GitHub for new versions** (a request to the GitHub releases
+    API and its checksum asset, at most once a day), or
+  - explicitly clicks **Download and install** for an available update.
 - History is optional and stored in `%LOCALAPPDATA%\OrbitConvert\history.json`. Turning it off stops
   recording; Settings and the History page can clear it.
 - Logs stay in `%LOCALAPPDATA%\OrbitConvert\logs`, are deleted after 14 days, and contain file paths
@@ -75,7 +76,9 @@ succeeds.
   whose digest differs is deleted and reported; nothing is installed.
 - Downloads go to `%LOCALAPPDATA%\OrbitConvert\tools`, never to system folders, and archives are
   extracted with the same safe extractor.
-- OrbitConvert never updates itself; update checks only show a link.
+- Application updates are downloaded only after explicit confirmation. OrbitConvert selects the MSI
+  asset for the reported version, downloads it over HTTPS, verifies it against `SHA256SUMS.txt` from
+  the same GitHub release, deletes any mismatch, and only then starts Windows Installer.
 
 ## Local inter-process communication
 
