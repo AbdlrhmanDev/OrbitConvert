@@ -71,6 +71,8 @@
                                                     </Style>
                                                 </TextBlock.Style>
                                             </TextBlock>
+                                            <TextBlock Text="{Binding TimingText}" Style="{StaticResource Text.Caption}" FontFamily="{StaticResource MonoFont}"
+                                                       Margin="0,3,0,0" Visibility="{Binding TimingText, Converter={StaticResource NullToVisibility}}" />
                                         </StackPanel>
                                         <TextBlock Grid.Column="2" Text="{Binding Plan.Route.Label}" Style="{StaticResource Text.Mono}" VerticalAlignment="Center"
                                                    TextTrimming="CharacterEllipsis" Margin="0,0,14,0" />
@@ -109,6 +111,9 @@
                                             <Button Content="Show" Style="{StaticResource SmallOutlineButton}" Margin="6,0,0,0" ToolTip="Show in folder"
                                                     Visibility="{Binding IsFinished, Converter={StaticResource BoolToVisibility}}"
                                                     Command="{Binding DataContext.RevealCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" CommandParameter="{Binding}" />
+                                            <Button Content="Open" Style="{StaticResource SmallOutlineButton}" Margin="6,0,0,0" ToolTip="Open output"
+                                                    Visibility="{Binding IsFinished, Converter={StaticResource BoolToVisibility}}"
+                                                    Command="{Binding DataContext.OpenCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" CommandParameter="{Binding}" />
                                             <Button Content="✕" Style="{StaticResource SmallOutlineButton}" Margin="6,0,0,0" ToolTip="Cancel"
                                                     Foreground="{DynamicResource Brush.TextTertiary}"
                                                     Visibility="{Binding CanCancel, Converter={StaticResource BoolToVisibility}}"

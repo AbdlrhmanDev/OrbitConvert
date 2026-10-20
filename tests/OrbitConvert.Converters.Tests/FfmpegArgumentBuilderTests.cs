@@ -100,6 +100,73 @@ public class FfmpegArgumentBuilderTests
     }
 
     [Fact]
+    public void Video_trim_uses_a_precise_start_and_duration()
+    {
+        var options = new ConversionOptions
+        {
+            Video = { TrimStart = TimeSpan.FromSeconds(5.25), TrimEnd = TimeSpan.FromSeconds(12) },
+        };
+
+        var args = FfmpegArgumentBuilder.Build("a.mov", "b.mp4", KnownFormats.Mp4,
+            new("libx264", "aac"), options);
+
+        Assert.Equal("00:00:05.250", args[args.IndexOf("-ss") + 1]);
+        Assert.Equal("00:00:06.750", args[args.IndexOf("-t") + 1]);
+    }
+
+    [Fact]
+    public void Audio_trim_can_end_without_a_start()
+    {
+        var options = new ConversionOptions { Audio = { TrimEnd = TimeSpan.FromSeconds(30) } };
+        var args = FfmpegArgumentBuilder.Build("a.wav", "b.mp3", KnownFormats.Mp3,
+            new(null, "libmp3lame"), options);
+
+        Assert.DoesNotContain("-ss", args);
+        Assert.Equal("00:00:30.000", args[args.IndexOf("-t") + 1]);
+    }
+
+    [Theory]
+    [InlineData(-1, 10)]
+    [InlineData(10, 10)]
+    [InlineData(10, 5)]
+    public void Invalid_trim_ranges_are_rejected(double start, double end)
+    {
+        var options = new ConversionOptions
+        {
+            Video = { TrimStart = TimeSpan.FromSeconds(start), TrimEnd = TimeSpan.FromSeconds(end) },
+        };
+
+        Assert.Throws<ConversionException>(() => FfmpegArgumentBuilder.Build(
+            "a.mov", "b.mp4", KnownFormats.Mp4, new("libx264", "aac"), options));
+    }
+
+    [Fact]
+    public void Mkv_can_copy_all_or_one_subtitle_track()
+    {
+        var all = new ConversionOptions { Video = { Subtitles = SubtitleMode.CopyAll } };
+        var allArgs = FfmpegArgumentBuilder.Build("a.mov", "b.mkv", KnownFormats.Mkv,
+            new("libx264", "aac"), all);
+        Assert.Contains("0:s?", allArgs);
+        Assert.Contains("-c:s", allArgs);
+
+        var one = new ConversionOptions
+        {
+            Video = { Subtitles = SubtitleMode.Select, SubtitleStreamIndex = 2 },
+        };
+        var oneArgs = FfmpegArgumentBuilder.Build("a.mov", "b.mkv", KnownFormats.Mkv,
+            new("libx264", "aac"), one);
+        Assert.Contains("0:s:2?", oneArgs);
+    }
+
+    [Fact]
+    public void Subtitle_copy_is_rejected_for_unsupported_containers()
+    {
+        var options = new ConversionOptions { Video = { Subtitles = SubtitleMode.CopyAll } };
+        Assert.Throws<ConversionException>(() => FfmpegArgumentBuilder.Build(
+            "a.mov", "b.mp4", KnownFormats.Mp4, new("libx264", "aac"), options));
+    }
+
+    [Fact]
     public void Gif_uses_a_generated_palette()
     {
         var args = FfmpegArgumentBuilder.Build("a.mp4", "b.gif", KnownFormats.Gif, new("gif", null),

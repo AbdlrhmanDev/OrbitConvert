@@ -11,19 +11,22 @@
 
 .EXAMPLE
     pwsh scripts/build-release.ps1
-    pwsh scripts/build-release.ps1 -Version 0.2.0 -SkipTests
+    pwsh scripts/build-release.ps1 -Version 0.3.0 -Runtime win-arm64 -SkipTests
 #>
 [CmdletBinding()]
 param(
     [string]$Version,
     [string]$Configuration = "Release",
+    [ValidateSet("win-x64", "win-arm64")]
+    [string]$Runtime = "win-x64",
+    [switch]$AppendArtifacts,
     [switch]$SkipTests
 )
 
 $ErrorActionPreference = "Stop"
 $root = Split-Path -Parent $PSScriptRoot
 $artifacts = Join-Path $root "artifacts"
-$publish = Join-Path $artifacts "publish\OrbitConvert"
+$publish = Join-Path $artifacts "publish\OrbitConvert-$Runtime"
 $release = Join-Path $artifacts "release"
 
 function Invoke-Step([string]$Title, [scriptblock]$Action) {
@@ -37,7 +40,8 @@ if (-not $Version) {
 }
 Write-Host "OrbitConvert $Version" -ForegroundColor Green
 
-Remove-Item -Recurse -Force $publish, $release -ErrorAction SilentlyContinue
+Remove-Item -Recurse -Force $publish -ErrorAction SilentlyContinue
+if (-not $AppendArtifacts) { Remove-Item -Recurse -Force $release -ErrorAction SilentlyContinue }
 New-Item -ItemType Directory -Force $release | Out-Null
 
 if (-not $SkipTests) {
@@ -46,16 +50,16 @@ if (-not $SkipTests) {
 
 # Self-contained: users do not need to install .NET.
 Invoke-Step "Publish desktop app" {
-    dotnet publish "$root\src\OrbitConvert.App\OrbitConvert.App.csproj" -c $Configuration -r win-x64 --self-contained `
+    dotnet publish "$root\src\OrbitConvert.App\OrbitConvert.App.csproj" -c $Configuration -r $Runtime --self-contained `
         -p:Version=$Version -p:DebugType=none -o $publish --nologo
 }
 Invoke-Step "Publish command-line tool" {
-    dotnet publish "$root\src\OrbitConvert.Cli\OrbitConvert.Cli.csproj" -c $Configuration -r win-x64 --self-contained `
+    dotnet publish "$root\src\OrbitConvert.Cli\OrbitConvert.Cli.csproj" -c $Configuration -r $Runtime --self-contained `
         -p:Version=$Version -p:DebugType=none -o $publish --nologo
 }
 
 # Portable ZIP: the marker file makes OrbitConvert keep settings in .\data next to the executable.
-$portableName = "OrbitConvert-$Version-win-x64-portable"
+$portableName = "OrbitConvert-$Version-$Runtime-portable"
 $staging = Join-Path $artifacts "staging\$portableName"
 Remove-Item -Recurse -Force (Join-Path $artifacts "staging") -ErrorAction SilentlyContinue
 New-Item -ItemType Directory -Force $staging | Out-Null
@@ -68,7 +72,9 @@ $zip = Join-Path $release "$portableName.zip"
 Invoke-Step "Create portable ZIP" { Compress-Archive -Path $staging -DestinationPath $zip -CompressionLevel Optimal; $global:LASTEXITCODE = 0 }
 
 Invoke-Step "Build MSI installer" {
-    dotnet build "$root\installer\OrbitConvert.Installer.wixproj" -c $Configuration -p:Version=$Version -p:PublishDir=$publish -o $release --nologo
+    $installerPlatform = if ($Runtime -eq "win-arm64") { "arm64" } else { "x64" }
+    dotnet build "$root\installer\OrbitConvert.Installer.wixproj" -c $Configuration -p:Version=$Version -p:Runtime=$Runtime `
+        -p:InstallerPlatform=$installerPlatform -p:PublishDir=$publish -o $release --nologo
 }
 Get-ChildItem $release -Filter *.wixpdb | Remove-Item -Force
 

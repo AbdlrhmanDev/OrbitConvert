@@ -30,6 +30,7 @@ public sealed partial class ConversionJob : ObservableObject
 
     /// <summary>0..1, or a negative value when progress is indeterminate.</summary>
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(TimingText))]
     private double _progress = -1;
 
     [ObservableProperty]
@@ -45,9 +46,11 @@ public sealed partial class ConversionJob : ObservableObject
     private IReadOnlyList<string> _outputs = [];
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(TimingText))]
     private DateTimeOffset? _startedAt;
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(TimingText))]
     private DateTimeOffset? _completedAt;
 
     public int Attempts { get; internal set; }
@@ -58,6 +61,25 @@ public sealed partial class ConversionJob : ObservableObject
     public bool CanRetry => Status is JobStatus.Failed or JobStatus.Canceled;
     public bool CanPause => Status == JobStatus.Queued;
     public bool CanResume => Status == JobStatus.Paused;
+
+    public string TimingText
+    {
+        get
+        {
+            if (StartedAt is not { } started) return "";
+            var elapsed = (CompletedAt ?? DateTimeOffset.Now) - started;
+            if (Progress is > 0 and < 1 && Status == JobStatus.Running)
+            {
+                var remaining = TimeSpan.FromTicks((long)(elapsed.Ticks * (1 - Progress) / Progress));
+                return $"Elapsed {Format(elapsed)} · about {Format(remaining)} remaining";
+            }
+            return $"Elapsed {Format(elapsed)}";
+        }
+    }
+
+    private static string Format(TimeSpan value) => value.TotalHours >= 1
+        ? value.ToString(@"h\:mm\:ss")
+        : value.ToString(@"m\:ss");
 
     internal void Reset()
     {

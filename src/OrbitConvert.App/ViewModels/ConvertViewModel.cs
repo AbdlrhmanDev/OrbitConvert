@@ -43,6 +43,8 @@ public sealed partial class StagedFileViewModel(InputFile input, ConversionOptio
 
     [ObservableProperty] private string _dimensions = "—";
     [ObservableProperty] private ImageSource? _preview;
+    [ObservableProperty] private TargetViewModel? _selectedTarget;
+    public ObservableCollection<TargetViewModel> Targets { get; } = [];
 
     private bool _detailsLoaded;
 
@@ -154,7 +156,7 @@ public sealed partial class ConvertViewModel : ObservableObject
         get
         {
             var file = PreviewFile;
-            var target = SelectedTarget?.Target;
+            var target = (PerFileOptions ? file?.SelectedTarget : SelectedTarget)?.Target;
             if (file is null || target is null)
             {
                 return "—";
@@ -179,7 +181,7 @@ public sealed partial class ConvertViewModel : ObservableObject
         _ => "If the name exists: add “(1)”",
     };
 
-    public string StartLabel => SelectedTarget is { } t ? "Convert to " + t.Label : "Convert";
+    public string StartLabel => PerFileOptions ? "Convert each file" : SelectedTarget is { } t ? "Convert to " + t.Label : "Convert";
 
     // Measured output size (images): the first file is encoded in memory with the current options.
     [ObservableProperty] private string? _estimateText;
@@ -232,6 +234,7 @@ public sealed partial class ConvertViewModel : ObservableObject
     [ObservableProperty] private bool _showPdfRotate;
     [ObservableProperty] private bool _showPdfDpi;
     [ObservableProperty] private bool _showPdfCompression;
+    [ObservableProperty] private bool _showPdfOcr;
     [ObservableProperty] private bool _showDocumentOptions;
     [ObservableProperty] private bool _showArchiveOptions;
     [ObservableProperty] private bool _hasOptions;
@@ -254,7 +257,7 @@ public sealed partial class ConvertViewModel : ObservableObject
         }
     }
 
-    public bool IsPageRangeRequired => SelectedTarget?.Key == PdfToolsConverter.ExtractKey;
+    public bool IsPageRangeRequired => (PerFileOptions ? (SelectedFile ?? Files.FirstOrDefault())?.SelectedTarget : SelectedTarget)?.Key == PdfToolsConverter.ExtractKey;
     public bool IsPageRangeMissing => IsPageRangeRequired && string.IsNullOrWhiteSpace(PdfPageRange);
     public string PdfPagesHint => IsPageRangeRequired
         ? "Pages to extract (required), for example 1-3, 5 or 8-."
@@ -276,6 +279,8 @@ public sealed partial class ConvertViewModel : ObservableObject
         [new("High quality", VideoQuality.High), new("Balanced", VideoQuality.Balanced), new("Smaller file", VideoQuality.Small)];
     public IReadOnlyList<Choice<VideoCodec>> Codecs { get; } =
         [new("Automatic", VideoCodec.Auto), new("H.264", VideoCodec.H264), new("H.265 / HEVC", VideoCodec.H265), new("VP9", VideoCodec.VP9), new("AV1 (slow)", VideoCodec.AV1)];
+    public IReadOnlyList<Choice<SubtitleMode>> SubtitleModes { get; } =
+        [new("Remove subtitles", SubtitleMode.DropAll), new("Copy all (MKV)", SubtitleMode.CopyAll), new("Copy one track (MKV)", SubtitleMode.Select)];
     public IReadOnlyList<Choice<int?>> FrameRates { get; } =
         [new("Original", null), new("24 fps", 24), new("25 fps", 25), new("30 fps", 30), new("50 fps", 50), new("60 fps", 60)];
     public IReadOnlyList<Choice<int?>> SampleRates { get; } =
@@ -290,6 +295,8 @@ public sealed partial class ConvertViewModel : ObservableObject
         new("Balanced — 150 dpi images (needs Ghostscript)", PdfCompressionLevel.Balanced),
         new("Strong — 72 dpi images (needs Ghostscript)", PdfCompressionLevel.Strong),
     ];
+    public IReadOnlyList<Choice<string>> OcrLanguages { get; } =
+        [new("English", "eng"), new("Arabic", "ara"), new("English + Arabic", "eng+ara"), new("French", "fra"), new("German", "deu"), new("Spanish", "spa")];
     public IReadOnlyList<Choice<ArchiveCompression>> ArchiveLevels { get; } =
         [new("Fastest", ArchiveCompression.Fastest), new("Balanced", ArchiveCompression.Optimal), new("Smallest", ArchiveCompression.Smallest)];
     public IReadOnlyList<Choice<CollisionStrategy>> CollisionChoices { get; } =
@@ -318,6 +325,13 @@ public sealed partial class ConvertViewModel : ObservableObject
         OnPropertyChanged(nameof(PdfPagesHint));
         OnPropertyChanged(nameof(PdfPageRange));
         StartCommand.NotifyCanExecuteChanged();
+        if (value is not null && !PerFileOptions)
+        {
+            foreach (var file in Files)
+            {
+                file.SelectedTarget = file.Targets.FirstOrDefault(t => t.Key == value.Key && t.IsAvailable) ?? file.SelectedTarget;
+            }
+        }
     }
 
     partial void OnSelectedFileChanged(StagedFileViewModel? value)
@@ -331,12 +345,16 @@ public sealed partial class ConvertViewModel : ObservableObject
         OnPropertyChanged(nameof(PdfPageRange));
         OnPropertyChanged(nameof(IsPageRangeMissing));
         StartCommand.NotifyCanExecuteChanged();
+        UpdateOptionVisibility();
     }
 
     partial void OnSharedOptionsChanged(ConversionOptions value)
     {
         OnPropertyChanged(nameof(PdfPageRange));
         OnPropertyChanged(nameof(IsPageRangeMissing));
+        OnPropertyChanged(nameof(StartLabel));
+        OnPropertyChanged(nameof(OutputName));
+        UpdateOptionVisibility();
         StartCommand.NotifyCanExecuteChanged();
     }
 
@@ -369,7 +387,21 @@ public sealed partial class ConvertViewModel : ObservableObject
                 var analyzed = await Task.Run(() => _coordinator.Registry.Analyze(fresh));
                 foreach (var input in analyzed)
                 {
-                    Files.Add(new StagedFileViewModel(input, SharedOptions.Clone()));
+                    var file = new StagedFileViewModel(input, SharedOptions.Clone());
+                    file.PropertyChanged += (_, e) =>
+                    {
+                        if (e.PropertyName == nameof(StagedFileViewModel.SelectedTarget))
+                        {
+                            StartCommand.NotifyCanExecuteChanged();
+                            OnPropertyChanged(nameof(OutputName));
+                            if (ReferenceEquals(SelectedFile, file))
+                            {
+                                UpdateOptionVisibility();
+                            }
+                        }
+                    };
+                    Files.Add(file);
+                    await PopulateFileTargetsAsync(file, targetKey);
                 }
             }
             finally
@@ -379,6 +411,18 @@ public sealed partial class ConvertViewModel : ObservableObject
         }
         StatusMessage = skippedFolders > 0 ? "Folders are not converted directly; add the files inside them." : null;
         await RefreshTargetsAsync(targetKey);
+    }
+
+    private async Task PopulateFileTargetsAsync(StagedFileViewModel file, string? preferredKey)
+    {
+        var targets = await Task.Run(() => _coordinator.Registry.GetTargets([file.Input]));
+        file.Targets.Clear();
+        foreach (var target in targets)
+        {
+            file.Targets.Add(new TargetViewModel(target, file.Input.Format?.Category, file.Input.Format));
+        }
+        file.SelectedTarget = file.Targets.FirstOrDefault(t => t.Key == preferredKey && t.IsAvailable)
+                              ?? file.Targets.FirstOrDefault(t => t.IsAvailable);
     }
 
     private async Task RefreshTargetsAsync(string? preferredKey = null)
@@ -400,15 +444,18 @@ public sealed partial class ConvertViewModel : ObservableObject
                          ?? Targets.FirstOrDefault(t => t.Key == previous)
                          ?? Targets.FirstOrDefault(t => t.IsAvailable);
         TargetsMessage = inputs.Count == 0 ? null
-            : Targets.Count == 0 ? "These files have no conversion in common. Convert them in separate batches."
+            : Targets.Count == 0 ? "These files have no shared format. Enable a different target for each file below."
             : Targets.All(t => !t.IsAvailable) ? "Conversions for these files need a tool that is not installed. See Settings → Conversion tools."
             : null;
     }
 
     private void UpdateOptionVisibility()
     {
-        var t = SelectedTarget?.Target;
-        var formats = Files.Select(f => f.Input.Format).ToList();
+        var selected = PerFileOptions ? (SelectedFile ?? Files.FirstOrDefault())?.SelectedTarget : SelectedTarget;
+        var t = selected?.Target;
+        var formats = PerFileOptions && (SelectedFile ?? Files.FirstOrDefault()) is { } file
+            ? new List<FileFormat?> { file.Input.Format }
+            : Files.Select(f => f.Input.Format).ToList();
         bool All(Func<FileFormat?, bool> predicate) => formats.Count > 0 && formats.All(predicate);
         var key = t?.Key ?? "";
         var output = t?.Output;
@@ -423,10 +470,11 @@ public sealed partial class ConvertViewModel : ObservableObject
         ShowPdfRotate = key == "pdf-rotate";
         ShowPdfDpi = pdfInput && key is "png" or "jpeg" or "webp";
         ShowPdfCompression = key == "pdf-compress";
+        ShowPdfOcr = key == PdfToolsConverter.OcrKey;
         ShowDocumentOptions = All(f => f is { Category: FormatCategory.Document }) && output?.Category == FormatCategory.Document;
         ShowArchiveOptions = key is "zip" or "7z";
         HasOptions = ShowImageOptions || ShowVideoOptions || ShowGifOptions || ShowAudioOptions || ShowPdfPages || ShowPdfRotate
-                     || ShowPdfDpi || ShowPdfCompression || ShowDocumentOptions || ShowArchiveOptions;
+                     || ShowPdfDpi || ShowPdfCompression || ShowPdfOcr || ShowDocumentOptions || ShowArchiveOptions;
     }
 
     [RelayCommand]
@@ -484,12 +532,16 @@ public sealed partial class ConvertViewModel : ObservableObject
         }
     }
 
-    private bool CanStart() => Files.Count > 0 && SelectedTarget is { IsAvailable: true } && !IsPageRangeMissing;
+    private bool CanStart() => Files.Count > 0
+        && (PerFileOptions
+            ? Files.All(f => f.SelectedTarget is { IsAvailable: true })
+            : SelectedTarget is { IsAvailable: true })
+        && !IsPageRangeMissing;
 
     [RelayCommand(CanExecute = nameof(CanStart))]
     private void Start()
     {
-        var target = SelectedTarget!;
+        var target = SelectedTarget;
         if (IsPageRangeMissing)
         {
             StatusMessage = "Enter the pages to extract, for example 1-3, 5.";
@@ -506,21 +558,27 @@ public sealed partial class ConvertViewModel : ObservableObject
         {
             var plans = new List<ConversionPlan>();
             var skipped = 0;
-            if (PerFileOptions && target.Target.Kind != RouteKind.Combine)
+            if (PerFileOptions)
             {
                 foreach (var file in Files)
                 {
-                    plans.AddRange(registry.CreatePlans([file.Input], target.Key, file.Options, output, out var s));
+                    var fileTarget = file.SelectedTarget
+                        ?? throw new ConversionException($"Choose an output format for {file.Name}.");
+                    if (fileTarget.Target.Kind == RouteKind.Combine)
+                    {
+                        throw new ConversionException($"{fileTarget.Label} combines files and cannot be used as a per-file target.");
+                    }
+                    plans.AddRange(registry.CreatePlans([file.Input], fileTarget.Key, file.Options, output, out var s));
                     skipped += s.Count;
                 }
             }
             else
             {
-                plans.AddRange(registry.CreatePlans(Files.Select(f => f.Input).ToList(), target.Key, SharedOptions, output, out var s));
+                plans.AddRange(registry.CreatePlans(Files.Select(f => f.Input).ToList(), target!.Key, SharedOptions, output, out var s));
                 skipped = s.Count;
             }
 
-            var batch = _coordinator.Enqueue(plans, skipped, target.Label);
+            var batch = _coordinator.Enqueue(plans, skipped, PerFileOptions ? "Mixed targets" : target!.Label);
             StatusMessage = skipped > 0 ? $"{skipped} file(s) already in that format were skipped." : null;
             Track(batch);
         }

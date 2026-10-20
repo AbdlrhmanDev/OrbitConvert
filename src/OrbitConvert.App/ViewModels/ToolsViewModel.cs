@@ -14,16 +14,15 @@ namespace OrbitConvert.App.ViewModels;
 public enum ToolsMode { Pdf, Image }
 
 /// <summary>What a tool card does when clicked.</summary>
-public enum ToolAction { Convert, Crop, Background, InspectPdf, TestArchive, Planned }
+public enum ToolAction { Convert, Crop, Background, ImageEdit, PdfReorder, InspectPdf, TestArchive }
 
 /// <summary>
-/// A tool card. <see cref="Icon"/> is 24x24 stroke path data from the design. Planned cards are
-/// shown disabled so it is clear the feature does not exist yet.
+/// A functional tool card. <see cref="Icon"/> is 24x24 stroke path data from the design.
 /// </summary>
 public sealed record ToolCard(string Title, string Description, string Icon, string Category, ToolAction Action,
     string? TargetKey = null, IReadOnlyList<FileFormat>? Accepts = null, bool Multiple = true)
 {
-    public bool Available => Action != ToolAction.Planned;
+    public bool Available => true;
     public string Tag { get; init; } = "Ready";
     public bool TagIsWarning { get; init; }
 }
@@ -37,13 +36,15 @@ public sealed partial class ToolsViewModel : ObservableObject
     private readonly DialogService _dialogs;
     private readonly Lazy<IMainWindowHost> _host;
     private readonly ImageEditorService _editors;
+    private readonly PdfEditorService _pdfEditor;
     private readonly IToolLocator _tools;
 
-    public ToolsViewModel(DialogService dialogs, Lazy<IMainWindowHost> host, ImageEditorService editors, IToolLocator tools)
+    public ToolsViewModel(DialogService dialogs, Lazy<IMainWindowHost> host, ImageEditorService editors, PdfEditorService pdfEditor, IToolLocator tools)
     {
         _dialogs = dialogs;
         _host = host;
         _editors = editors;
+        _pdfEditor = pdfEditor;
         _tools = tools;
         PdfTools = BuildPdfTools();
     }
@@ -67,7 +68,7 @@ public sealed partial class ToolsViewModel : ObservableObject
     public bool IsPdf => Mode == ToolsMode.Pdf;
     public string Title => IsPdf ? "PDF Tools" : "Image Tools";
     public string Subtitle => IsPdf
-        ? "Everything runs on this PC. OCR is not included."
+        ? "Everything runs on this PC. OCR uses an installed Ghostscript and never uploads the document."
         : "Crop and Add background open a small floating editor. Every tool saves a new file; originals are kept.";
     public IReadOnlyList<ToolCard> Cards => IsPdf ? PdfTools : ImageTools;
 
@@ -94,10 +95,13 @@ public sealed partial class ToolsViewModel : ObservableObject
                 "M12 3v6l3-3M12 9L9 6M12 21v-6l3 3M12 15l-3 3M4 12h16", "Pdf",
                 ToolAction.Convert, PdfToolsConverter.CompressKey, [KnownFormats.Pdf])
             { Tag = hasGhostscript ? "Ready" : "Strong modes need Ghostscript", TagIsWarning = !hasGhostscript },
+            new("OCR", "Make scanned PDF text searchable without uploading the document.",
+                "M4 5h16v14H4zM7 9h2M7 13h10M7 17h7", "Pdf", ToolAction.Convert, PdfToolsConverter.OcrKey, [KnownFormats.Pdf])
+            { Tag = hasGhostscript ? "Ready" : "Needs Ghostscript", TagIsWarning = !hasGhostscript },
             new("Inspect", "Pages, PDF version, page size, producer and metadata.", "M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14zM21 21l-5-5", "Pdf",
                 ToolAction.InspectPdf),
-            new("Reorder", "Drag thumbnails to change page order.", "M8 6h12M8 12h12M8 18h12M4 6h.01M4 12h.01M4 18h.01", "Pdf",
-                ToolAction.Planned) { Tag = "Planned" },
+            new("Reorder", "Reorder, rotate or remove pages with live thumbnails.", "M8 6h12M8 12h12M8 18h12M4 6h.01M4 12h.01M4 18h.01", "Pdf",
+                ToolAction.PdfReorder, Accepts: [KnownFormats.Pdf], Multiple: false),
         ];
     }
 
@@ -112,9 +116,9 @@ public sealed partial class ToolsViewModel : ObservableObject
         new("Add background", "Gradients, padding, corners, shadow.", "M3 3h18v18H3zM7 7h10v10H7z", "Image",
             ToolAction.Background, Accepts: Images, Multiple: false),
         new("Edit", "Resize, rotate, flip, brightness, contrast.", "M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M14 4v4M8 10v4M16 16v4", "Image",
-            ToolAction.Planned) { Tag = "Planned · resize and rotate are in Convert options" },
-        new("Annotate", "Text, arrows, shapes and highlights.", "M4 20l4-1 11-11-3-3L5 16zM14 6l3 3", "Image", ToolAction.Planned) { Tag = "Planned" },
-        new("Redact", "Permanently flatten pixels. Not an overlay.", "M4 6h16v4H4zM4 14h10v4H4z", "Image", ToolAction.Planned) { Tag = "Planned" },
+            ToolAction.ImageEdit, Accepts: Images, Multiple: false),
+        new("Annotate", "Add text and flattened vector marks.", "M4 20l4-1 11-11-3-3L5 16zM14 6l3 3", "Image", ToolAction.ImageEdit, Accepts: Images, Multiple: false),
+        new("Redact", "Permanently replace selected pixels. Not an overlay.", "M4 6h16v4H4zM4 14h10v4H4z", "Image", ToolAction.ImageEdit, Accepts: Images, Multiple: false),
     ];
 
     public IReadOnlyList<ToolCard> ArchiveTools { get; } =
@@ -141,8 +145,6 @@ public sealed partial class ToolsViewModel : ObservableObject
             case ToolAction.TestArchive:
                 await TestArchiveAsync();
                 return;
-            case ToolAction.Planned:
-                return;
         }
 
         var files = card.Accepts is not { Count: > 0 }
@@ -159,6 +161,12 @@ public sealed partial class ToolsViewModel : ObservableObject
                 break;
             case ToolAction.Background:
                 _editors.OpenBackground(files[0]);
+                break;
+            case ToolAction.ImageEdit:
+                _editors.OpenEditor(files[0], card.Title.ToLowerInvariant());
+                break;
+            case ToolAction.PdfReorder:
+                _pdfEditor.OpenReorder(files[0]);
                 break;
             default:
                 _host.Value.ShowConvert(files, card.TargetKey);

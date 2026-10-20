@@ -21,6 +21,61 @@ public sealed class ImageEditor : IImageEditor
     public Task<string> AddBackgroundAsync(string inputPath, BackgroundEditRequest request, CancellationToken cancellationToken) =>
         Task.Run(() => AddBackground(inputPath, request, cancellationToken), cancellationToken);
 
+    public Task<string> EditAsync(string inputPath, ImageEditRequest request, CancellationToken cancellationToken) =>
+        Task.Run(() => Edit(inputPath, request, cancellationToken), cancellationToken);
+
+    public Task<byte[]> PreviewAsync(string inputPath, ImageEditRequest request, CancellationToken cancellationToken) =>
+        Task.Run(() => Preview(inputPath, request, cancellationToken), cancellationToken);
+
+    public IReadOnlyList<ImageMetadataEntry> ReadMetadata(string inputPath)
+    {
+        EnsureReadable(inputPath);
+        using var image = new MagickImage(inputPath);
+        var profile = image.GetExifProfile();
+        if (profile is null) return [];
+        return profile.Values.Select(value =>
+        {
+            var raw = value.GetValue();
+            var text = raw switch
+            {
+                Array array => string.Join(", ", array.Cast<object>()),
+                null => "",
+                _ => raw.ToString() ?? "",
+            };
+            var key = value.Tag.ToString();
+            return new ImageMetadataEntry(key, text, key.StartsWith("GPS", StringComparison.OrdinalIgnoreCase));
+        }).OrderByDescending(x => x.IsGps).ThenBy(x => x.Key).ToList();
+    }
+
+    public Task<string> RemoveMetadataAsync(string inputPath, IReadOnlySet<string> keys, bool removeAll, CancellationToken cancellationToken) =>
+        Task.Run(() =>
+        {
+            EnsureReadable(inputPath);
+            using var image = new MagickImage(inputPath);
+            cancellationToken.ThrowIfCancellationRequested();
+            if (removeAll)
+            {
+                image.Strip();
+            }
+            else
+            {
+                var profile = image.GetExifProfile();
+                if (profile is not null)
+                {
+                    var tags = profile.Values.Where(value => keys.Contains(value.Tag.ToString())).Select(value => value.Tag).ToList();
+                    foreach (var tag in tags)
+                    {
+                        profile.RemoveValue(tag);
+                    }
+                    image.SetProfile(profile);
+                }
+            }
+            var extension = SafeOutputExtension(inputPath);
+            var destination = NewOutputPath(inputPath, "metadata-clean", extension);
+            WriteAtomically(image, destination, image.Format);
+            return destination;
+        }, cancellationToken);
+
     private static string Crop(string inputPath, CropEditRequest request, CancellationToken ct)
     {
         EnsureReadable(inputPath);
@@ -98,6 +153,139 @@ public sealed class ImageEditor : IImageEditor
         var destination = NewOutputPath(inputPath, "bg", ".png");
         WriteAtomically(canvas, destination, MagickFormat.Png);
         return destination;
+    }
+
+    private static string Edit(string inputPath, ImageEditRequest request, CancellationToken ct)
+    {
+        EnsureReadable(inputPath);
+        using var image = new MagickImage(inputPath);
+        ApplyEdits(image, request, ct);
+        image.Strip();
+        var destination = NewOutputPath(inputPath, "edit", ".png");
+        WriteAtomically(image, destination, MagickFormat.Png);
+        return destination;
+    }
+
+    private static byte[] Preview(string inputPath, ImageEditRequest request, CancellationToken ct)
+    {
+        EnsureReadable(inputPath);
+        using var image = new MagickImage(inputPath);
+        ApplyEdits(image, request, ct);
+        if (image.Width > 1400 || image.Height > 1000)
+        {
+            image.Resize(new MagickGeometry(1400, 1000) { Greater = true });
+        }
+        image.Strip();
+        return image.ToByteArray(MagickFormat.Png);
+    }
+
+    private static void ApplyEdits(MagickImage image, ImageEditRequest request, CancellationToken ct)
+    {
+        if (request.RotationDegrees % 90 != 0)
+        {
+            throw new ConversionException("Rotation must be a multiple of 90 degrees.");
+        }
+        foreach (var shape in request.Annotations)
+        {
+            ValidateNormalized(shape.X1, shape.Y1, shape.X2, shape.Y2, "annotation");
+        }
+        foreach (var area in request.Redactions)
+        {
+            ValidateNormalized(area.X, area.Y, area.X + area.Width, area.Y + area.Height, "redaction");
+        }
+
+        image.AutoOrient();
+        ct.ThrowIfCancellationRequested();
+
+        var width = request.Width is > 0 ? request.Width : null;
+        var height = request.Height is > 0 ? request.Height : null;
+        if (width is not null || height is not null)
+        {
+            var geometry = new MagickGeometry((uint)(width ?? checked((int)image.Width)), (uint)(height ?? checked((int)image.Height)))
+            {
+                IgnoreAspectRatio = width is not null && height is not null,
+            };
+            image.Resize(geometry);
+        }
+        if (request.RotationDegrees % 360 != 0)
+        {
+            image.BackgroundColor = MagickColors.Transparent;
+            image.Rotate(request.RotationDegrees % 360);
+            image.ResetPage();
+        }
+        if (request.Flip == ImageFlip.Horizontal)
+        {
+            image.Flop();
+        }
+        else if (request.Flip == ImageFlip.Vertical)
+        {
+            image.Flip();
+        }
+        if (request.Brightness != 0 || request.Contrast != 0)
+        {
+            image.BrightnessContrast(new Percentage(Math.Clamp(request.Brightness, -100, 100)),
+                new Percentage(Math.Clamp(request.Contrast, -100, 100)));
+        }
+
+        foreach (var annotation in request.Annotations)
+        {
+            ct.ThrowIfCancellationRequested();
+            DrawAnnotation(image, annotation);
+        }
+        foreach (var area in request.Redactions)
+        {
+            ct.ThrowIfCancellationRequested();
+            var x1 = area.X * image.Width;
+            var y1 = area.Y * image.Height;
+            var x2 = (area.X + area.Width) * image.Width;
+            var y2 = (area.Y + area.Height) * image.Height;
+            new Drawables().FillColor(ParseColor(area.Color, "redaction color"))
+                .StrokeColor(ParseColor(area.Color, "redaction color"))
+                .Rectangle(x1, y1, x2, y2).Draw(image);
+        }
+
+    }
+
+    private static void DrawAnnotation(MagickImage image, ImageAnnotation annotation)
+    {
+        var color = ParseColor(annotation.Color, "annotation color");
+        var x1 = annotation.X1 * image.Width;
+        var y1 = annotation.Y1 * image.Height;
+        var x2 = annotation.X2 * image.Width;
+        var y2 = annotation.Y2 * image.Height;
+        var draw = new Drawables().StrokeColor(color).StrokeWidth(Math.Clamp(annotation.StrokeWidth, 1, 100));
+        switch (annotation.Kind)
+        {
+            case ImageAnnotationKind.Text:
+                if (string.IsNullOrWhiteSpace(annotation.Text)) return;
+                draw.FillColor(color).FontPointSize(Math.Clamp(annotation.FontSize, 8, 300)).Text(x1, y1, annotation.Text).Draw(image);
+                break;
+            case ImageAnnotationKind.Arrow:
+                draw.FillColor(MagickColors.Transparent).Line(x1, y1, x2, y2).Draw(image);
+                var angle = Math.Atan2(y2 - y1, x2 - x1);
+                var size = Math.Max(10, annotation.StrokeWidth * 4);
+                new Drawables().StrokeColor(color).StrokeWidth(annotation.StrokeWidth)
+                    .Line(x2, y2, x2 - size * Math.Cos(angle - .55), y2 - size * Math.Sin(angle - .55))
+                    .Line(x2, y2, x2 - size * Math.Cos(angle + .55), y2 - size * Math.Sin(angle + .55)).Draw(image);
+                break;
+            case ImageAnnotationKind.Rectangle:
+                draw.FillColor(MagickColors.Transparent).Rectangle(x1, y1, x2, y2).Draw(image);
+                break;
+            case ImageAnnotationKind.Ellipse:
+                draw.FillColor(MagickColors.Transparent)
+                    .Ellipse((x1 + x2) / 2, (y1 + y2) / 2, Math.Abs(x2 - x1) / 2, Math.Abs(y2 - y1) / 2, 0, 360)
+                    .Draw(image);
+                break;
+        }
+    }
+
+    private static void ValidateNormalized(double x1, double y1, double x2, double y2, string label)
+    {
+        if (!double.IsFinite(x1) || !double.IsFinite(y1) || !double.IsFinite(x2) || !double.IsFinite(y2)
+            || x1 < 0 || y1 < 0 || x2 > 1 || y2 > 1 || x2 <= x1 || y2 <= y1)
+        {
+            throw new ConversionException($"The {label} area must stay inside the image.");
+        }
     }
 
     private static MagickImage CreateBackground(int width, int height, MagickColor color1, MagickColor color2, bool gradient)

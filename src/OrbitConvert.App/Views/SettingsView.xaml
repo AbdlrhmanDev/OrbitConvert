@@ -54,7 +54,7 @@
                         <ComboBox ItemsSource="{Binding Languages}" DisplayMemberPath="Label" SelectedValuePath="Value" SelectedValue="{Binding Language}"
                                   Width="220" HorizontalAlignment="Left" AutomationProperties.Name="Language" />
                     </DockPanel>
-                    <TextBlock Text="English is the only translation so far. Translations are welcome — see CONTRIBUTING.md." Style="{StaticResource Hint}" />
+                    <TextBlock Text="English and Arabic are included. Arabic applies right-to-left layout immediately." Style="{StaticResource Hint}" />
                 </StackPanel>
             </Border>
 

@@ -5,9 +5,11 @@
     scripts/build-release.ps1 runs publish and this project together.
   -->
   <PropertyGroup>
-    <OutputName>OrbitConvert-$(Version)-win-x64</OutputName>
-    <Platform>x64</Platform>
-    <InstallerPlatform>x64</InstallerPlatform>
+    <Runtime Condition="'$(Runtime)' == ''">win-x64</Runtime>
+    <OutputName>OrbitConvert-$(Version)-$(Runtime)</OutputName>
+    <Platform Condition="'$(InstallerPlatform)' == ''">x64</Platform>
+    <Platform Condition="'$(InstallerPlatform)' != ''">$(InstallerPlatform)</Platform>
+    <InstallerPlatform Condition="'$(InstallerPlatform)' == ''">x64</InstallerPlatform>
     <PublishDir Condition="'$(PublishDir)' == ''">$(MSBuildThisFileDirectory)..\artifacts\publish\OrbitConvert</PublishDir>
     <DefineConstants>PublishDir=$(PublishDir);ProductVersion=$(Version);RepoRoot=$(MSBuildThisFileDirectory)..</DefineConstants>
     <!-- ICE91 warns that per-user folders are not copied for per-machine installs; this package is per-user only. -->

@@ -124,4 +124,15 @@ public sealed partial class BatchViewModel : ObservableObject
             ShellLauncher.RevealInExplorer(path);
         }
     }
+
+    [RelayCommand]
+    private void Open(ConversionJob job)
+    {
+        var path = job.Outputs.FirstOrDefault(p => File.Exists(p) || Directory.Exists(p));
+        if (path is not null)
+        {
+            if (Directory.Exists(path)) ShellLauncher.OpenFolder(path);
+            else ShellLauncher.OpenFile(path);
+        }
+    }
 }

@@ -29,6 +29,7 @@ public sealed class ImageMagickConverter : IConverter
         ConfigureLimits();
         return MagickNET.SupportedFormats.GroupBy(f => f.Format).ToDictionary(g => g.Key, g => g.First());
     });
+    private static readonly Lazy<bool> HeicWriterWorks = new(ProbeHeicWriter);
 
     public ImageMagickConverter()
     {
@@ -61,7 +62,35 @@ public sealed class ImageMagickConverter : IConverter
         {
             return RouteAvailability.Unavailable($"The bundled ImageMagick cannot write {route.Output!.Label}.");
         }
+        if (route.Output == KnownFormats.Heic && !HeicWriterWorks.Value)
+        {
+            return RouteAvailability.Unavailable("HEIC encoding is not available in this build. Install a build with a working HEIC writer or choose AVIF/WebP.");
+        }
         return RouteAvailability.Available;
+    }
+
+    /// <summary>
+    /// ImageMagick can advertise a coder even when its native HEIC delegate cannot actually encode.
+    /// Prove capability with a one-pixel in-memory encode before exposing HEIC as an output.
+    /// </summary>
+    private static bool ProbeHeicWriter()
+    {
+        try
+        {
+            if (!Coders.Value.TryGetValue(MagickFormat.Heic, out var coder) || !coder.SupportsWriting)
+            {
+                return false;
+            }
+            using var image = new MagickImage(MagickColors.Black, 1, 1);
+            var bytes = image.ToByteArray(MagickFormat.Heic);
+            return bytes.Length >= 12
+                   && bytes[4] == (byte)'f' && bytes[5] == (byte)'t'
+                   && bytes[6] == (byte)'y' && bytes[7] == (byte)'p';
+        }
+        catch (Exception ex) when (ex is MagickException or NotSupportedException or TypeInitializationException)
+        {
+            return false;
+        }
     }
 
     public static bool CanRead(FileFormat format) =>
