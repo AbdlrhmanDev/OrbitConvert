@@ -1,7 +1,10 @@
 using System.Globalization;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Documents;
 using System.Windows.Markup;
+using System.Windows.Media;
+using System.Windows.Media.Media3D;
 
 namespace OrbitConvert.App.Services;
 
@@ -12,6 +15,7 @@ public sealed class LanguageManager
     private readonly ResourceDictionary _arabic = Load("ar");
     private readonly Dictionary<string, string> _toArabic;
     private readonly Dictionary<string, string> _toEnglish;
+    private readonly HashSet<Window> _enabledWindows = [];
     private string _language = "en";
 
     public LanguageManager()
@@ -40,15 +44,56 @@ public sealed class LanguageManager
     {
         window.FlowDirection = IsRtl ? FlowDirection.RightToLeft : FlowDirection.LeftToRight;
         window.Language = XmlLanguage.GetLanguage(_language);
-        window.AddHandler(FrameworkElement.LoadedEvent, new RoutedEventHandler(OnElementLoaded), true);
-        Translate(window);
+        if (_enabledWindows.Add(window))
+        {
+            window.AddHandler(FrameworkElement.LoadedEvent, new RoutedEventHandler(OnElementLoaded), true);
+            window.Closed += (_, _) => _enabledWindows.Remove(window);
+        }
+        TranslateTree(window);
     }
 
     private void OnElementLoaded(object sender, RoutedEventArgs args)
     {
         if (args.OriginalSource is DependencyObject element)
         {
-            Translate(element);
+            TranslateTree(element);
+        }
+    }
+
+    /// <summary>
+    /// Loaded is raised only once. When the user changes language while a window is already open,
+    /// walk the existing visual and logical trees so every label is refreshed immediately.
+    /// </summary>
+    private void TranslateTree(DependencyObject root)
+    {
+        var visited = new HashSet<DependencyObject>(ReferenceEqualityComparer.Instance);
+        var pending = new Stack<DependencyObject>();
+        pending.Push(root);
+        while (pending.Count > 0)
+        {
+            var current = pending.Pop();
+            if (!visited.Add(current))
+            {
+                continue;
+            }
+
+            Translate(current);
+
+            if (current is FrameworkElement or FrameworkContentElement)
+            {
+                foreach (var child in LogicalTreeHelper.GetChildren(current).OfType<DependencyObject>())
+                {
+                    pending.Push(child);
+                }
+            }
+
+            if (current is Visual or Visual3D)
+            {
+                for (var i = 0; i < VisualTreeHelper.GetChildrenCount(current); i++)
+                {
+                    pending.Push(VisualTreeHelper.GetChild(current, i));
+                }
+            }
         }
     }
 
@@ -72,11 +117,20 @@ public sealed class LanguageManager
             case HeaderedContentControl header when header.Header is string value && map.TryGetValue(value, out var translated):
                 header.Header = translated;
                 break;
+            case Run run when map.TryGetValue(run.Text, out var translated):
+                run.Text = translated;
+                break;
         }
 
         if (element is FrameworkElement framework && framework.ToolTip is string tip && map.TryGetValue(tip, out var translatedTip))
         {
             framework.ToolTip = translatedTip;
+        }
+
+        var automationName = System.Windows.Automation.AutomationProperties.GetName(element);
+        if (!string.IsNullOrEmpty(automationName) && map.TryGetValue(automationName, out var translatedAutomationName))
+        {
+            System.Windows.Automation.AutomationProperties.SetName(element, translatedAutomationName);
         }
     }
 
