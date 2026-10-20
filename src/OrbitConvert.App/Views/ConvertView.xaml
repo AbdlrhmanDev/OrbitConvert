@@ -392,7 +392,7 @@
                             <ComboBox ItemsSource="{Binding OcrLanguages}" DisplayMemberPath="Label" SelectedValuePath="Value"
                                       SelectedValue="{Binding EditingOptions.Pdf.OcrLanguage}" AutomationProperties.Name="OCR language" />
                             <TextBlock Text="OCR runs locally. The selected language data must be available in Ghostscript."
-                                       Style="{StaticResource Hint}" Margin="0,6,0,0" TextWrapping="Wrap" />
+                                       Style="{StaticResource Text.Caption}" Margin="0,6,0,0" TextWrapping="Wrap" />
                         </StackPanel>
 
                         <!-- Document -->

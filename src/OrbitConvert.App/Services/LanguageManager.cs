@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Data;
 using System.Windows.Documents;
 using System.Windows.Markup;
 using System.Windows.Media;
@@ -26,6 +27,13 @@ public sealed class LanguageManager
 
     public event EventHandler? Changed;
     public bool IsRtl => _language == "ar";
+
+    /// <summary>Translates a literal UI value without changing bindings or persisted user data.</summary>
+    public string TranslateLiteral(string value)
+    {
+        var map = IsRtl ? _toArabic : _toEnglish;
+        return map.TryGetValue(value, out var translated) ? translated : value;
+    }
 
     public void Apply(string? language)
     {
@@ -108,27 +116,34 @@ public sealed class LanguageManager
             case PasswordBox passwordBox:
                 passwordBox.FlowDirection = FlowDirection.LeftToRight;
                 break;
-            case TextBlock text when map.TryGetValue(text.Text, out var translated):
+            case TextBlock text when !BindingOperations.IsDataBound(text, TextBlock.TextProperty)
+                                     && map.TryGetValue(text.Text, out var translated):
                 text.Text = translated;
                 break;
-            case ContentControl content when content.Content is string value && map.TryGetValue(value, out var translated):
+            case ContentControl content when !BindingOperations.IsDataBound(content, ContentControl.ContentProperty)
+                                            && content.Content is string value && map.TryGetValue(value, out var translated):
                 content.Content = translated;
                 break;
-            case HeaderedContentControl header when header.Header is string value && map.TryGetValue(value, out var translated):
+            case HeaderedContentControl header when !BindingOperations.IsDataBound(header, HeaderedContentControl.HeaderProperty)
+                                                  && header.Header is string value && map.TryGetValue(value, out var translated):
                 header.Header = translated;
                 break;
-            case Run run when map.TryGetValue(run.Text, out var translated):
+            case Run run when !BindingOperations.IsDataBound(run, Run.TextProperty)
+                              && map.TryGetValue(run.Text, out var translated):
                 run.Text = translated;
                 break;
         }
 
-        if (element is FrameworkElement framework && framework.ToolTip is string tip && map.TryGetValue(tip, out var translatedTip))
+        if (element is FrameworkElement framework
+            && !BindingOperations.IsDataBound(framework, FrameworkElement.ToolTipProperty)
+            && framework.ToolTip is string tip && map.TryGetValue(tip, out var translatedTip))
         {
             framework.ToolTip = translatedTip;
         }
 
         var automationName = System.Windows.Automation.AutomationProperties.GetName(element);
-        if (!string.IsNullOrEmpty(automationName) && map.TryGetValue(automationName, out var translatedAutomationName))
+        if (!BindingOperations.IsDataBound(element, System.Windows.Automation.AutomationProperties.NameProperty)
+            && !string.IsNullOrEmpty(automationName) && map.TryGetValue(automationName, out var translatedAutomationName))
         {
             System.Windows.Automation.AutomationProperties.SetName(element, translatedAutomationName);
         }

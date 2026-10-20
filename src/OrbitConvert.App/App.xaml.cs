@@ -24,6 +24,7 @@ public partial class App : Application, IMainWindowHost
     private MainWindow? _mainWindow;
     private bool _exiting;
     private bool _trayHintShown;
+    private bool _unhandledErrorShown;
 
     // Explorer starts one process per selected file for a context-menu verb. The running instance
     // collects requests that arrive close together and shows a single radial menu for all of them.
@@ -298,9 +299,15 @@ public partial class App : Application, IMainWindowHost
     private void OnUnhandledException(object sender, DispatcherUnhandledExceptionEventArgs e)
     {
         _logger?.LogCritical(e.Exception, "Unhandled UI exception");
+        e.Handled = true;
+        if (_unhandledErrorShown)
+        {
+            return;
+        }
+
+        _unhandledErrorShown = true;
         MessageBox.Show("Something went wrong: " + ErrorTranslator.ToUserMessage(e.Exception) + "\n\nDetails were written to the log file.",
             "OrbitConvert", MessageBoxButton.OK, MessageBoxImage.Error);
-        e.Handled = true;
     }
 
     protected override void OnExit(ExitEventArgs e)

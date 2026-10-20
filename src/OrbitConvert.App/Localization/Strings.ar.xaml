@@ -318,4 +318,18 @@
     <sys:String x:Key="SignatureHint">يوضح ما إذا تم تأكيد النوع من محتوى الملف أو من امتداده فقط</sys:String>
     <sys:String x:Key="Width">العرض</sys:String>
     <sys:String x:Key="Working">جارٍ العمل…</sys:String>
+    <sys:String x:Key="PresetOptimizeWeb">تحسين للويب</sys:String>
+    <sys:String x:Key="PresetWhatsApp">فيديو لواتساب</sys:String>
+    <sys:String x:Key="PresetExtractAudio">استخراج الصوت</sys:String>
+    <sys:String x:Key="PresetDocumentPdf">تحويل المستند إلى PDF</sys:String>
+    <sys:String x:Key="PresetCompressEmail">ضغط للبريد الإلكتروني</sys:String>
+    <sys:String x:Key="PresetRemoveMetadata">إزالة بيانات الصورة الوصفية</sys:String>
+    <sys:String x:Key="PresetWebSummary">جودة 80 · حد أقصى 2560 بكسل&#10;إزالة EXIF · ألوان sRGB</sys:String>
+    <sys:String x:Key="PresetWhatsAppSummary">H.264 · ‏720p · متوازن&#10;AAC ‏128k · بدء سريع</sys:String>
+    <sys:String x:Key="PresetAudioSummary">MP3 · ‏192 كيلوبت/ث&#10;مع الاحتفاظ بالوسوم</sys:String>
+    <sys:String x:Key="PresetDocumentSummary">LibreOffice دون واجهة&#10;بنفس تخطيط المستند</sys:String>
+    <sys:String x:Key="PresetEmailSummary">جودة 70 · حد أقصى 1600 بكسل&#10;إزالة EXIF</sys:String>
+    <sys:String x:Key="PresetMetadataSummary">نفس الصيغة&#10;إزالة EXIF وGPS وXMP</sys:String>
+    <sys:String x:Key="RemoveOrbitMenu">إزالة من قائمة Orbit</sys:String>
+    <sys:String x:Key="ShowOrbitMenu">إظهار في قائمة Orbit</sys:String>
 </ResourceDictionary>

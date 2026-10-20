@@ -318,4 +318,18 @@
     <sys:String x:Key="SignatureHint">Whether the type was confirmed from the file's content (magic bytes) or only from its extension</sys:String>
     <sys:String x:Key="Width">Width</sys:String>
     <sys:String x:Key="Working">Working…</sys:String>
+    <sys:String x:Key="PresetOptimizeWeb">Optimize for web</sys:String>
+    <sys:String x:Key="PresetWhatsApp">Video for WhatsApp</sys:String>
+    <sys:String x:Key="PresetExtractAudio">Extract audio</sys:String>
+    <sys:String x:Key="PresetDocumentPdf">Document to PDF</sys:String>
+    <sys:String x:Key="PresetCompressEmail">Compress for email</sys:String>
+    <sys:String x:Key="PresetRemoveMetadata">Remove photo metadata</sys:String>
+    <sys:String x:Key="PresetWebSummary">quality 80 · max 2560 px&#10;strip EXIF · sRGB</sys:String>
+    <sys:String x:Key="PresetWhatsAppSummary">H.264 · 720p · balanced&#10;AAC 128k · fast start</sys:String>
+    <sys:String x:Key="PresetAudioSummary">MP3 · 192 kbps&#10;keeps tags</sys:String>
+    <sys:String x:Key="PresetDocumentSummary">LibreOffice, headless&#10;layout as in the document</sys:String>
+    <sys:String x:Key="PresetEmailSummary">quality 70 · max 1600 px&#10;strip EXIF</sys:String>
+    <sys:String x:Key="PresetMetadataSummary">same format&#10;strip EXIF, GPS, XMP</sys:String>
+    <sys:String x:Key="RemoveOrbitMenu">Remove from the Orbit Menu</sys:String>
+    <sys:String x:Key="ShowOrbitMenu">Show in the Orbit Menu</sys:String>
 </ResourceDictionary>

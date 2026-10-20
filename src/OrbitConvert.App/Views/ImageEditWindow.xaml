@@ -46,7 +46,7 @@
 
                 <TextBlock Text="Metadata" Style="{StaticResource Text.Caption}" Margin="0,18,0,6"/>
                 <TextBlock Text="GPS fields are marked with a location icon. Select only what you want removed."
-                           Style="{StaticResource Hint}" TextWrapping="Wrap"/>
+                           Style="{StaticResource Text.Caption}" TextWrapping="Wrap"/>
                 <ItemsControl ItemsSource="{Binding Metadata}" MaxHeight="150" Margin="0,6,0,0">
                     <ItemsControl.Template><ControlTemplate><ScrollViewer VerticalScrollBarVisibility="Auto"><ItemsPresenter/></ScrollViewer></ControlTemplate></ItemsControl.Template>
                     <ItemsControl.ItemTemplate>

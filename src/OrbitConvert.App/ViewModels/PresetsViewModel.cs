@@ -10,13 +10,20 @@ namespace OrbitConvert.App.ViewModels;
 public sealed partial class PresetCardViewModel(PresetsViewModel owner, ConversionPreset preset) : ObservableObject
 {
     public ConversionPreset Preset { get; } = preset;
-    public string Name => Preset.Name;
+    public string Name => Preset.BuiltIn ? owner.Localize(Preset.Name) : Preset.Name;
     public string Tag => Preset.Tag;
     public string Category => Preset.Category;
-    public string Summary => Preset.Summary;
+    public string Summary => Preset.BuiltIn ? owner.Localize(Preset.Summary) : Preset.Summary;
     public bool CanDelete => !Preset.BuiltIn;
     public bool Starred => Preset.Starred;
-    public string StarToolTip => Starred ? "Remove from the Orbit Menu" : "Show in the Orbit Menu";
+    public string StarToolTip => owner.Localize(Starred ? "Remove from the Orbit Menu" : "Show in the Orbit Menu");
+
+    internal void RefreshLanguage()
+    {
+        OnPropertyChanged(nameof(Name));
+        OnPropertyChanged(nameof(Summary));
+        OnPropertyChanged(nameof(StarToolTip));
+    }
 
     [RelayCommand] private void ToggleStar() => owner.ToggleStar(this);
     [RelayCommand] private void Run() => owner.Run(this);
@@ -29,12 +36,21 @@ public sealed partial class PresetsViewModel : ObservableObject
     private readonly ISettingsStore _settings;
     private readonly DialogService _dialogs;
     private readonly PresetRunner _runner;
+    private readonly LanguageManager _language;
 
-    public PresetsViewModel(ISettingsStore settings, DialogService dialogs, PresetRunner runner)
+    public PresetsViewModel(ISettingsStore settings, DialogService dialogs, PresetRunner runner, LanguageManager language)
     {
         _settings = settings;
         _dialogs = dialogs;
         _runner = runner;
+        _language = language;
+        _language.Changed += (_, _) =>
+        {
+            foreach (var card in Cards)
+            {
+                card.RefreshLanguage();
+            }
+        };
         Refresh();
     }
 
@@ -43,6 +59,8 @@ public sealed partial class PresetsViewModel : ObservableObject
     public ObservableCollection<PresetCardViewModel> Cards { get; } = [];
 
     [ObservableProperty] private string? _message;
+
+    internal string Localize(string value) => _language.TranslateLiteral(value);
 
     public void Refresh()
     {
