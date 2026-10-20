@@ -1,7 +1,8 @@
+using System.ComponentModel;
 using System.Globalization;
+using System.Runtime.CompilerServices;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Data;
 using System.Windows.Documents;
 using System.Windows.Markup;
 using System.Windows.Media;
@@ -17,6 +18,8 @@ public sealed class LanguageManager
     private readonly Dictionary<string, string> _toArabic;
     private readonly Dictionary<string, string> _toEnglish;
     private readonly HashSet<Window> _enabledWindows = [];
+    private readonly ConditionalWeakTable<DependencyObject, object> _hookedElements = new();
+    private readonly HashSet<DependencyObject> _updatingElements = new(ReferenceEqualityComparer.Instance);
     private string _language = "en";
 
     public LanguageManager()
@@ -107,6 +110,7 @@ public sealed class LanguageManager
 
     private void Translate(DependencyObject element)
     {
+        HookLiveValueChanges(element);
         var map = IsRtl ? _toArabic : _toEnglish;
         switch (element)
         {
@@ -116,36 +120,93 @@ public sealed class LanguageManager
             case PasswordBox passwordBox:
                 passwordBox.FlowDirection = FlowDirection.LeftToRight;
                 break;
-            case TextBlock text when !BindingOperations.IsDataBound(text, TextBlock.TextProperty)
-                                     && map.TryGetValue(text.Text, out var translated):
-                text.Text = translated;
+            case TextBlock text when map.TryGetValue(text.Text, out var translated):
+                SetTranslatedValue(text, TextBlock.TextProperty, translated);
                 break;
-            case ContentControl content when !BindingOperations.IsDataBound(content, ContentControl.ContentProperty)
-                                            && content.Content is string value && map.TryGetValue(value, out var translated):
-                content.Content = translated;
+            case HeaderedContentControl header when header.Header is string value && map.TryGetValue(value, out var translated):
+                SetTranslatedValue(header, HeaderedContentControl.HeaderProperty, translated);
                 break;
-            case HeaderedContentControl header when !BindingOperations.IsDataBound(header, HeaderedContentControl.HeaderProperty)
-                                                  && header.Header is string value && map.TryGetValue(value, out var translated):
-                header.Header = translated;
+            case ContentControl content when content.Content is string value && map.TryGetValue(value, out var translated):
+                SetTranslatedValue(content, ContentControl.ContentProperty, translated);
                 break;
-            case Run run when !BindingOperations.IsDataBound(run, Run.TextProperty)
-                              && map.TryGetValue(run.Text, out var translated):
-                run.Text = translated;
+            case Run run when map.TryGetValue(run.Text, out var translated):
+                SetTranslatedValue(run, Run.TextProperty, translated);
                 break;
         }
 
         if (element is FrameworkElement framework
-            && !BindingOperations.IsDataBound(framework, FrameworkElement.ToolTipProperty)
             && framework.ToolTip is string tip && map.TryGetValue(tip, out var translatedTip))
         {
-            framework.ToolTip = translatedTip;
+            SetTranslatedValue(framework, FrameworkElement.ToolTipProperty, translatedTip);
         }
 
         var automationName = System.Windows.Automation.AutomationProperties.GetName(element);
-        if (!BindingOperations.IsDataBound(element, System.Windows.Automation.AutomationProperties.NameProperty)
-            && !string.IsNullOrEmpty(automationName) && map.TryGetValue(automationName, out var translatedAutomationName))
+        if (!string.IsNullOrEmpty(automationName) && map.TryGetValue(automationName, out var translatedAutomationName))
         {
-            System.Windows.Automation.AutomationProperties.SetName(element, translatedAutomationName);
+            SetTranslatedValue(element, System.Windows.Automation.AutomationProperties.NameProperty, translatedAutomationName);
+        }
+    }
+
+    /// <summary>
+    /// Bound text can change after Loaded (status, format choices, search results). Observe those
+    /// target values and translate with SetCurrentValue, which keeps the original binding intact.
+    /// </summary>
+    private void HookLiveValueChanges(DependencyObject element)
+    {
+        if (_hookedElements.TryGetValue(element, out _))
+        {
+            return;
+        }
+        _hookedElements.Add(element, new object());
+
+        switch (element)
+        {
+            case TextBlock:
+                AddValueHook(element, TextBlock.TextProperty, typeof(TextBlock));
+                break;
+            case HeaderedContentControl:
+                AddValueHook(element, HeaderedContentControl.HeaderProperty, typeof(HeaderedContentControl));
+                break;
+            case ContentControl:
+                AddValueHook(element, ContentControl.ContentProperty, typeof(ContentControl));
+                break;
+            case Run:
+                AddValueHook(element, Run.TextProperty, typeof(Run));
+                break;
+        }
+
+        if (element is FrameworkElement)
+        {
+            AddValueHook(element, FrameworkElement.ToolTipProperty, typeof(FrameworkElement));
+        }
+    }
+
+    private void AddValueHook(DependencyObject element, DependencyProperty property, Type ownerType) =>
+        DependencyPropertyDescriptor.FromProperty(property, ownerType)?.AddValueChanged(element, OnTranslatableValueChanged);
+
+    private void OnTranslatableValueChanged(object? sender, EventArgs args)
+    {
+        if (sender is DependencyObject element && !_updatingElements.Contains(element))
+        {
+            Translate(element);
+        }
+    }
+
+    private void SetTranslatedValue(DependencyObject element, DependencyProperty property, string value)
+    {
+        if (Equals(element.GetValue(property), value))
+        {
+            return;
+        }
+
+        _updatingElements.Add(element);
+        try
+        {
+            element.SetCurrentValue(property, value);
+        }
+        finally
+        {
+            _updatingElements.Remove(element);
         }
     }
 
