@@ -7,7 +7,7 @@
     <WarningsAsErrors>nullable</WarningsAsErrors>
     <Deterministic>true</Deterministic>
 
-    <Version>0.3.3</Version>
+    <Version>0.3.7</Version>
     <Authors>OrbitConvert contributors</Authors>
     <Company>OrbitConvert</Company>
     <Product>OrbitConvert</Product>

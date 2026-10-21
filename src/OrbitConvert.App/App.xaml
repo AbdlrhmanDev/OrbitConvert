@@ -9,6 +9,7 @@
                 <!-- Replaced at runtime by ThemeManager with Light.xaml or Dark.xaml. -->
                 <ResourceDictionary Source="pack://application:,,,/OrbitConvert;component/Themes/Light.xaml" />
                 <ResourceDictionary Source="pack://application:,,,/OrbitConvert;component/Themes/Styles.xaml" />
+                <ResourceDictionary Source="pack://application:,,,/OrbitConvert;component/Localization/Strings.en.xaml" />
             </ResourceDictionary.MergedDictionaries>
         </ResourceDictionary>
     </Application.Resources>

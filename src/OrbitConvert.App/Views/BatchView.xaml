@@ -10,17 +10,17 @@
     <DockPanel Margin="32">
         <DockPanel DockPanel.Dock="Top" Margin="0,0,0,20">
             <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Bottom">
-                <Button Content="Clear finished" Style="{StaticResource OutlineButton}" Command="{Binding ClearFinishedCommand}" Margin="0,0,8,0" />
-                <Button Content="Pause queue" Style="{StaticResource OutlineButton}" Command="{Binding PauseQueueCommand}" Margin="0,0,8,0"
-                        ToolTip="Hold the jobs that have not started. Running jobs finish."
+                <Button Content="{DynamicResource ClearFinished}" Style="{StaticResource OutlineButton}" Command="{Binding ClearFinishedCommand}" Margin="0,0,8,0" />
+                <Button Content="{DynamicResource PauseQueue}" Style="{StaticResource OutlineButton}" Command="{Binding PauseQueueCommand}" Margin="0,0,8,0"
+                        ToolTip="{DynamicResource PauseHint}"
                         Visibility="{Binding HasWaiting, Converter={StaticResource BoolToVisibility}}" />
-                <Button Content="Resume queue" Style="{StaticResource OutlineButton}" Command="{Binding ResumeQueueCommand}" Margin="0,0,8,0"
+                <Button Content="{DynamicResource ResumeQueue}" Style="{StaticResource OutlineButton}" Command="{Binding ResumeQueueCommand}" Margin="0,0,8,0"
                         Visibility="{Binding HasPaused, Converter={StaticResource BoolToVisibility}}" />
-                <Button Content="Add files" Style="{StaticResource PrimaryButton}" FontSize="13" Padding="14,8" Command="{Binding AddFilesCommand}" />
+                <Button Content="{DynamicResource AddFiles}" Style="{StaticResource PrimaryButton}" FontSize="13" Padding="14,8" Command="{Binding AddFilesCommand}" />
             </StackPanel>
             <StackPanel>
-                <TextBlock Text="Batch" Style="{StaticResource Text.Display}" />
-                <TextBlock Text="{Binding Summary}" Style="{StaticResource Text.Secondary}" FontSize="14" Foreground="{DynamicResource Brush.TextTertiary}" Margin="0,4,0,0" />
+                <TextBlock Text="{DynamicResource Batch}" Style="{StaticResource Text.Display}" />
+                <TextBlock Text="{Binding Summary, Converter={StaticResource LocalizedString}}" Style="{StaticResource Text.Secondary}" FontSize="14" Foreground="{DynamicResource Brush.TextTertiary}" Margin="0,4,0,0" />
             </StackPanel>
         </DockPanel>
 
@@ -33,32 +33,32 @@
                             <ColumnDefinition Width="54" /><ColumnDefinition Width="2*" /><ColumnDefinition Width="*" />
                             <ColumnDefinition Width="1.4*" /><ColumnDefinition Width="170" />
                         </Grid.ColumnDefinitions>
-                        <TextBlock Text="Type" Style="{StaticResource Text.Caption}" />
-                        <TextBlock Grid.Column="1" Text="File" Style="{StaticResource Text.Caption}" Margin="14,0" />
-                        <TextBlock Grid.Column="2" Text="Output" Style="{StaticResource Text.Caption}" Margin="0,0,14,0" />
-                        <TextBlock Grid.Column="3" Text="Progress" Style="{StaticResource Text.Caption}" />
-                        <TextBlock Grid.Column="4" Text="Actions" Style="{StaticResource Text.Caption}" HorizontalAlignment="Right" />
+                        <TextBlock Text="{DynamicResource Type}" Style="{StaticResource Text.Caption}" />
+                        <TextBlock Grid.Column="1" Text="{DynamicResource File}" Style="{StaticResource Text.Caption}" Margin="14,0" />
+                        <TextBlock Grid.Column="2" Text="{DynamicResource Output}" Style="{StaticResource Text.Caption}" Margin="0,0,14,0" />
+                        <TextBlock Grid.Column="3" Text="{DynamicResource Progress}" Style="{StaticResource Text.Caption}" />
+                        <TextBlock Grid.Column="4" Text="{DynamicResource Actions}" Style="{StaticResource Text.Caption}" HorizontalAlignment="Right" />
                     </Grid>
                 </Border>
                 <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
-                    <ItemsControl ItemsSource="{Binding Jobs}" Focusable="False" AutomationProperties.Name="Conversion queue">
+                    <ItemsControl ItemsSource="{Binding Jobs}" Focusable="False" AutomationProperties.Name="{DynamicResource ConversionQueue}">
                         <ItemsControl.ItemTemplate>
                             <DataTemplate>
                                 <Border Background="{DynamicResource Brush.Surface}" BorderBrush="{DynamicResource Brush.Border}" BorderThickness="0,1,0,0" Padding="0,12"
-                                        AutomationProperties.Name="{Binding Title}">
+                                        AutomationProperties.Name="{Binding Title, Converter={StaticResource LocalizedString}}">
                                     <Grid Style="{StaticResource RowGrid}">
                                         <Grid.ColumnDefinitions>
                                             <ColumnDefinition Width="54" /><ColumnDefinition Width="2*" /><ColumnDefinition Width="*" />
                                             <ColumnDefinition Width="1.4*" /><ColumnDefinition Width="170" />
                                         </Grid.ColumnDefinitions>
                                         <Border Style="{StaticResource ExtTag}" VerticalAlignment="Center">
-                                            <TextBlock Text="{Binding Plan.Inputs[0].Format.Label, FallbackValue=?}" Style="{StaticResource Text.Mono}" FontSize="11"
+                                            <TextBlock Text="{Binding Plan.Inputs[0].Format.Label, FallbackValue=?, Converter={StaticResource LocalizedString}}" Style="{StaticResource Text.Mono}" FontSize="11"
                                                        FontWeight="Bold" HorizontalAlignment="Center"
                                                        Foreground="{Binding Plan.Inputs[0].Format.Category, Converter={StaticResource CategoryToBrush}}" />
                                         </Border>
                                         <StackPanel Grid.Column="1" Margin="14,0" VerticalAlignment="Center">
-                                            <TextBlock Text="{Binding Plan.Inputs[0].FileName}" FontSize="14" Foreground="{DynamicResource Brush.Text}"
-                                                       TextTrimming="CharacterEllipsis" ToolTip="{Binding Plan.Inputs[0].Path}" />
+                                            <TextBlock Text="{Binding Plan.Inputs[0].FileName, Converter={StaticResource LocalizedString}}" FontSize="14" Foreground="{DynamicResource Brush.Text}"
+                                                       TextTrimming="CharacterEllipsis" ToolTip="{Binding Plan.Inputs[0].Path, Converter={StaticResource LocalizedString}}" />
                                             <TextBlock Text="{Binding Plan.Inputs.Count, StringFormat='{}{0} files combined into one output'}">
                                                 <TextBlock.Style>
                                                     <Style TargetType="TextBlock" BasedOn="{StaticResource Text.Caption}">
@@ -71,10 +71,10 @@
                                                     </Style>
                                                 </TextBlock.Style>
                                             </TextBlock>
-                                            <TextBlock Text="{Binding TimingText}" Style="{StaticResource Text.Caption}" FontFamily="{StaticResource MonoFont}"
+                                            <TextBlock Text="{Binding TimingText, Converter={StaticResource LocalizedString}}" Style="{StaticResource Text.Caption}" FontFamily="{StaticResource MonoFont}"
                                                        Margin="0,3,0,0" Visibility="{Binding TimingText, Converter={StaticResource NullToVisibility}}" />
                                         </StackPanel>
-                                        <TextBlock Grid.Column="2" Text="{Binding Plan.Route.Label}" Style="{StaticResource Text.Mono}" VerticalAlignment="Center"
+                                        <TextBlock Grid.Column="2" Text="{Binding Plan.Route.Label, Converter={StaticResource LocalizedString}}" Style="{StaticResource Text.Mono}" VerticalAlignment="Center"
                                                    TextTrimming="CharacterEllipsis" Margin="0,0,14,0" />
                                         <StackPanel Grid.Column="3" VerticalAlignment="Center">
                                             <ProgressBar Style="{StaticResource SlimProgress}" Maximum="100" Background="{DynamicResource Brush.Track}"
@@ -87,7 +87,7 @@
                                                 </ProgressBar.Value>
                                             </ProgressBar>
                                             <TextBlock Style="{StaticResource Text.Caption}" Margin="0,6,0,0" TextTrimming="CharacterEllipsis"
-                                                       Foreground="{Binding Status, Converter={StaticResource JobStatusBrush}}" ToolTip="{Binding TechnicalDetail}">
+                                                       Foreground="{Binding Status, Converter={StaticResource JobStatusBrush}}" ToolTip="{Binding TechnicalDetail, Converter={StaticResource LocalizedString}}">
                                                 <TextBlock.Text>
                                                     <MultiBinding Converter="{StaticResource JobStatusLine}" Mode="OneWay">
                                                         <Binding Path="Status" />
@@ -99,26 +99,26 @@
                                             </TextBlock>
                                         </StackPanel>
                                         <StackPanel Grid.Column="4" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
-                                            <Button Content="Pause" Style="{StaticResource SmallOutlineButton}" Margin="6,0,0,0"
+                                            <Button Content="{DynamicResource Pause}" Style="{StaticResource SmallOutlineButton}" Margin="6,0,0,0"
                                                     Visibility="{Binding CanPause, Converter={StaticResource BoolToVisibility}}"
                                                     Command="{Binding DataContext.PauseCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" CommandParameter="{Binding}" />
-                                            <Button Content="Resume" Style="{StaticResource SmallOutlineButton}" Margin="6,0,0,0"
+                                            <Button Content="{DynamicResource Resume}" Style="{StaticResource SmallOutlineButton}" Margin="6,0,0,0"
                                                     Visibility="{Binding CanResume, Converter={StaticResource BoolToVisibility}}"
                                                     Command="{Binding DataContext.ResumeCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" CommandParameter="{Binding}" />
-                                            <Button Content="Retry" Style="{StaticResource SmallOutlineButton}" Margin="6,0,0,0"
+                                            <Button Content="{DynamicResource Retry}" Style="{StaticResource SmallOutlineButton}" Margin="6,0,0,0"
                                                     Visibility="{Binding CanRetry, Converter={StaticResource BoolToVisibility}}"
                                                     Command="{Binding DataContext.RetryCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" CommandParameter="{Binding}" />
-                                            <Button Content="Show" Style="{StaticResource SmallOutlineButton}" Margin="6,0,0,0" ToolTip="Show in folder"
+                                            <Button Content="{DynamicResource Show}" Style="{StaticResource SmallOutlineButton}" Margin="6,0,0,0" ToolTip="{DynamicResource ShowFolder}"
                                                     Visibility="{Binding IsFinished, Converter={StaticResource BoolToVisibility}}"
                                                     Command="{Binding DataContext.RevealCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" CommandParameter="{Binding}" />
-                                            <Button Content="Open" Style="{StaticResource SmallOutlineButton}" Margin="6,0,0,0" ToolTip="Open output"
+                                            <Button Content="{DynamicResource Open}" Style="{StaticResource SmallOutlineButton}" Margin="6,0,0,0" ToolTip="{DynamicResource OpenOutput}"
                                                     Visibility="{Binding IsFinished, Converter={StaticResource BoolToVisibility}}"
                                                     Command="{Binding DataContext.OpenCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" CommandParameter="{Binding}" />
-                                            <Button Content="✕" Style="{StaticResource SmallOutlineButton}" Margin="6,0,0,0" ToolTip="Cancel"
+                                            <Button Content="✕" Style="{StaticResource SmallOutlineButton}" Margin="6,0,0,0" ToolTip="{DynamicResource Cancel}"
                                                     Foreground="{DynamicResource Brush.TextTertiary}"
                                                     Visibility="{Binding CanCancel, Converter={StaticResource BoolToVisibility}}"
                                                     Command="{Binding DataContext.CancelCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" CommandParameter="{Binding}" />
-                                            <Button Content="✕" Style="{StaticResource SmallOutlineButton}" Margin="6,0,0,0" ToolTip="Remove from list"
+                                            <Button Content="✕" Style="{StaticResource SmallOutlineButton}" Margin="6,0,0,0" ToolTip="{DynamicResource RemoveList}"
                                                     Foreground="{DynamicResource Brush.TextTertiary}"
                                                     Visibility="{Binding IsFinished, Converter={StaticResource BoolToVisibility}}"
                                                     Command="{Binding DataContext.RemoveCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" CommandParameter="{Binding}" />

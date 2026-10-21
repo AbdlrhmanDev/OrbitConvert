@@ -6,7 +6,7 @@
             <!-- Greeting -->
             <DockPanel>
                 <Button DockPanel.Dock="Right" Style="{StaticResource OutlineButton}" Background="{DynamicResource Brush.Surface}" Padding="14,9"
-                        Command="{Binding OpenOrbitCommand}" VerticalAlignment="Bottom" AutomationProperties.Name="Open Orbit Menu">
+                        Command="{Binding OpenOrbitCommand}" VerticalAlignment="Bottom" AutomationProperties.Name="{DynamicResource OpenOrbitMenu}">
                     <StackPanel Orientation="Horizontal">
                         <Viewbox Width="16" Height="16">
                             <Canvas Width="100" Height="100">
@@ -14,15 +14,15 @@
                                 <Ellipse Canvas.Left="63.2" Canvas.Top="20.8" Width="16" Height="16" Fill="{DynamicResource Brush.AccentText}" />
                             </Canvas>
                         </Viewbox>
-                        <TextBlock Text="Open Orbit Menu" Margin="10,0" VerticalAlignment="Center" />
+                        <TextBlock Text="{DynamicResource OpenOrbitMenu}" Margin="10,0" VerticalAlignment="Center" />
                         <Border BorderBrush="{DynamicResource Brush.Border}" BorderThickness="1" CornerRadius="4" Padding="6,2">
-                            <TextBlock Text="{Binding HotkeyText}" Style="{StaticResource Text.Mono}" FontSize="11" />
+                            <TextBlock Text="{Binding HotkeyText, Converter={StaticResource LocalizedString}}" Style="{StaticResource Text.Mono}" FontSize="11" />
                         </Border>
                     </StackPanel>
                 </Button>
                 <StackPanel>
-                    <TextBlock Text="{Binding Greeting}" Style="{StaticResource Text.Display}" />
-                    <TextBlock Text="Drop files here, or use the Orbit Menu from anywhere in Windows." Style="{StaticResource Text.Secondary}"
+                    <TextBlock Text="{Binding Greeting, Converter={StaticResource LocalizedString}}" Style="{StaticResource Text.Display}" />
+                    <TextBlock Text="{DynamicResource HomeHint}" Style="{StaticResource Text.Secondary}"
                                FontSize="14" Foreground="{DynamicResource Brush.TextTertiary}" Margin="0,4,0,0" />
                 </StackPanel>
             </DockPanel>
@@ -30,7 +30,7 @@
             <!-- Drop card -->
             <Border x:Name="DropArea" CornerRadius="16" MinHeight="250" Margin="0,24,0,0" AllowDrop="True" Cursor="Hand"
                     Background="{DynamicResource Brush.Surface}" Drop="OnDrop" DragEnter="OnDragEnter" DragLeave="OnDragLeave"
-                    MouseLeftButtonUp="OnDropAreaClick" AutomationProperties.Name="Drop area. Drop files here or click to choose files.">
+                    MouseLeftButtonUp="OnDropAreaClick" AutomationProperties.Name="{DynamicResource DropAreaName}">
                 <Grid>
                     <Rectangle x:Name="DashedBorder" RadiusX="16" RadiusY="16" StrokeThickness="1.5" StrokeDashArray="5 4"
                                Stroke="{DynamicResource Brush.BorderStrong}" />
@@ -45,35 +45,35 @@
                                 </Canvas>
                             </Viewbox>
                         </Grid>
-                        <TextBlock Text="Drop files to convert" Style="{StaticResource Text.Title}" FontSize="24" HorizontalAlignment="Center" Margin="0,14,0,0" />
-                        <TextBlock Text="Images, video, audio, documents, PDFs and archives. Only formats your installed engines support are shown."
+                        <TextBlock Text="{DynamicResource DropFiles}" Style="{StaticResource Text.Title}" FontSize="24" HorizontalAlignment="Center" Margin="0,14,0,0" />
+                        <TextBlock Text="{DynamicResource FormatsHint}"
                                    Style="{StaticResource Text.Secondary}" FontSize="14" Foreground="{DynamicResource Brush.TextTertiary}"
                                    TextAlignment="Center" HorizontalAlignment="Center" Margin="0,14,0,0" />
                         <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,18,0,0">
-                            <Button Content="Select files" Style="{StaticResource PrimaryButton}" Command="{Binding SelectFilesCommand}" />
-                            <Button Content="Add folder" Style="{StaticResource OutlineButton}" FontSize="14" Padding="18,10" Margin="8,0,0,0"
+                            <Button Content="{DynamicResource SelectFiles}" Style="{StaticResource PrimaryButton}" Command="{Binding SelectFilesCommand}" />
+                            <Button Content="{DynamicResource AddFolder}" Style="{StaticResource OutlineButton}" FontSize="14" Padding="18,10" Margin="8,0,0,0"
                                     Command="{Binding AddFolderCommand}" />
                         </StackPanel>
                     </StackPanel>
                 </Grid>
             </Border>
-            <TextBlock Text="{Binding Message}" Style="{StaticResource Text.Secondary}" Foreground="{DynamicResource Brush.Warning}" Margin="0,10,0,0"
+            <TextBlock Text="{Binding Message, Converter={StaticResource LocalizedString}}" Style="{StaticResource Text.Secondary}" Foreground="{DynamicResource Brush.Warning}" Margin="0,10,0,0"
                        Visibility="{Binding Message, Converter={StaticResource NullToVisibility}}" />
 
             <!-- Quick presets -->
-            <TextBlock Text="Quick presets" Style="{StaticResource Text.Section}" Margin="0,24,0,10" />
+            <TextBlock Text="{DynamicResource QuickPresets}" Style="{StaticResource Text.Section}" Margin="0,24,0,10" />
             <ItemsControl ItemsSource="{Binding QuickPresets}" Focusable="False">
                 <ItemsControl.ItemsPanel><ItemsPanelTemplate><UniformGrid Columns="4" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
                 <ItemsControl.ItemTemplate>
                     <DataTemplate>
                         <Button Style="{StaticResource CardButton}" Padding="14" Margin="0,0,10,0"
                                 Command="{Binding DataContext.RunPresetCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" CommandParameter="{Binding}"
-                                AutomationProperties.Name="{Binding Name}" ToolTip="Choose files and run this preset">
+                                AutomationProperties.Name="{Binding Name, Converter={StaticResource LocalizedString}}" ToolTip="{DynamicResource RunPresetHint}">
                             <StackPanel>
-                                <TextBlock Text="{Binding Tag}" Style="{StaticResource Text.Mono}" FontSize="11" FontWeight="Bold"
+                                <TextBlock Text="{Binding Tag, Converter={StaticResource LocalizedString}}" Style="{StaticResource Text.Mono}" FontSize="11" FontWeight="Bold"
                                            Foreground="{Binding Category, Converter={StaticResource CategoryToBrush}}" />
-                                <TextBlock Text="{Binding Name}" FontSize="14" FontWeight="SemiBold" Margin="0,8,0,0" Foreground="{DynamicResource Brush.Text}" />
-                                <TextBlock Text="{Binding Summary}" Style="{StaticResource Text.Caption}" Margin="0,8,0,0" TextWrapping="Wrap" />
+                                <TextBlock Text="{Binding Name, Converter={StaticResource LocalizedString}}" FontSize="14" FontWeight="SemiBold" Margin="0,8,0,0" Foreground="{DynamicResource Brush.Text}" />
+                                <TextBlock Text="{Binding Summary, Converter={StaticResource LocalizedString}}" Style="{StaticResource Text.Caption}" Margin="0,8,0,0" TextWrapping="Wrap" />
                             </StackPanel>
                         </Button>
                     </DataTemplate>
@@ -82,15 +82,15 @@
 
             <!-- Queue -->
             <DockPanel Margin="0,24,0,8">
-                <Button DockPanel.Dock="Right" Content="Open batch view" Command="{Binding ShowBatchCommand}" Cursor="Hand"
+                <Button DockPanel.Dock="Right" Content="{DynamicResource OpenBatch}" Command="{Binding ShowBatchCommand}" Cursor="Hand"
                         Foreground="{DynamicResource Brush.AccentText}" FontSize="14">
                     <Button.Template>
                         <ControlTemplate TargetType="Button"><ContentPresenter /></ControlTemplate>
                     </Button.Template>
                 </Button>
-                <TextBlock Text="Queue" FontSize="14" FontWeight="SemiBold" Foreground="{DynamicResource Brush.Text}" />
+                <TextBlock Text="{DynamicResource Queue}" FontSize="14" FontWeight="SemiBold" Foreground="{DynamicResource Brush.Text}" />
             </DockPanel>
-            <TextBlock Text="Nothing converting right now." Style="{StaticResource Text.Caption}"
+            <TextBlock Text="{DynamicResource NothingConverting}" Style="{StaticResource Text.Caption}"
                        Visibility="{Binding HasJobs, Converter={StaticResource BoolToVisibility}, ConverterParameter=Invert}" />
             <ItemsControl ItemsSource="{Binding TopJobs}" Focusable="False">
                 <ItemsControl.ItemTemplate>
@@ -104,7 +104,7 @@
                                     <ColumnDefinition Width="110" />
                                 </Grid.ColumnDefinitions>
                                 <Border Style="{StaticResource ExtTag}" VerticalAlignment="Center">
-                                    <TextBlock Text="{Binding Plan.Inputs[0].Format.Label, FallbackValue=?}" Style="{StaticResource Text.Mono}" FontSize="11"
+                                    <TextBlock Text="{Binding Plan.Inputs[0].Format.Label, FallbackValue=?, Converter={StaticResource LocalizedString}}" Style="{StaticResource Text.Mono}" FontSize="11"
                                                FontWeight="Bold" HorizontalAlignment="Center"
                                                Foreground="{Binding Plan.Inputs[0].Format.Category, Converter={StaticResource CategoryToBrush}}" />
                                 </Border>
@@ -112,7 +112,7 @@
                                     <DockPanel>
                                         <TextBlock DockPanel.Dock="Right" Text="{Binding Plan.Inputs[0].Length, Converter={StaticResource FileSize}}"
                                                    Style="{StaticResource Text.Mono}" Margin="8,0,0,0" />
-                                        <TextBlock Text="{Binding Title}" FontSize="14" Foreground="{DynamicResource Brush.Text}" TextTrimming="CharacterEllipsis" />
+                                        <TextBlock Text="{Binding Title, Converter={StaticResource LocalizedString}}" FontSize="14" Foreground="{DynamicResource Brush.Text}" TextTrimming="CharacterEllipsis" />
                                     </DockPanel>
                                     <ProgressBar Style="{StaticResource SlimProgress}" Margin="0,7,0,0" Maximum="100" Background="{DynamicResource Brush.Track}"
                                                  Foreground="{Binding Status, Converter={StaticResource JobBarBrush}}">

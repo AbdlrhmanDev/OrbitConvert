@@ -3,6 +3,7 @@ using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Data;
 using System.Windows.Documents;
 using System.Windows.Markup;
 using System.Windows.Media;
@@ -13,6 +14,8 @@ namespace OrbitConvert.App.Services;
 /// <summary>Applies the selected UI culture and translates static WPF labels as elements load.</summary>
 public sealed class LanguageManager
 {
+    public static LanguageManager? Current { get; private set; }
+
     private readonly ResourceDictionary _english = Load("en");
     private readonly ResourceDictionary _arabic = Load("ar");
     private readonly Dictionary<string, string> _toArabic;
@@ -24,8 +27,16 @@ public sealed class LanguageManager
 
     public LanguageManager()
     {
+        Current = this;
         _toArabic = BuildMap(_english, _arabic);
         _toEnglish = BuildMap(_arabic, _english);
+        // Loaded is a direct routed event, so a handler attached only to the Window misses pages
+        // and data templates created later. A class handler sees every FrameworkElement instance.
+        EventManager.RegisterClassHandler(
+            typeof(FrameworkElement),
+            FrameworkElement.LoadedEvent,
+            new RoutedEventHandler(OnAnyElementLoaded),
+            true);
     }
 
     public event EventHandler? Changed;
@@ -44,6 +55,26 @@ public sealed class LanguageManager
         var culture = CultureInfo.GetCultureInfo(_language);
         CultureInfo.CurrentUICulture = culture;
         CultureInfo.CurrentCulture = culture;
+
+        // XAML uses DynamicResource for every static label. Replacing this one dictionary makes
+        // current and future pages resolve the selected language as soon as they are created.
+        var dictionaries = Application.Current.Resources.MergedDictionaries;
+        var localized = Load(_language);
+        var existingIndex = dictionaries
+            .Select((dictionary, index) => (dictionary, index))
+            .Where(item => item.dictionary.Source?.OriginalString.Contains("/Localization/Strings.", StringComparison.OrdinalIgnoreCase) == true)
+            .Select(item => item.index)
+            .DefaultIfEmpty(-1)
+            .First();
+        if (existingIndex >= 0)
+        {
+            dictionaries[existingIndex] = localized;
+        }
+        else
+        {
+            dictionaries.Add(localized);
+        }
+
         foreach (Window window in Application.Current.Windows)
         {
             Enable(window);
@@ -68,6 +99,14 @@ public sealed class LanguageManager
         if (args.OriginalSource is DependencyObject element)
         {
             TranslateTree(element);
+        }
+    }
+
+    private void OnAnyElementLoaded(object sender, RoutedEventArgs args)
+    {
+        if (sender is DependencyObject element)
+        {
+            Translate(element);
         }
     }
 
@@ -120,6 +159,9 @@ public sealed class LanguageManager
             case PasswordBox passwordBox:
                 passwordBox.FlowDirection = FlowDirection.LeftToRight;
                 break;
+            case TextBlock text when BindingOperations.GetBindingExpression(text, TextBlock.TextProperty) is { } textBinding:
+                textBinding.UpdateTarget();
+                break;
             case TextBlock text when map.TryGetValue(text.Text, out var translated):
                 SetTranslatedValue(text, TextBlock.TextProperty, translated);
                 break;
@@ -128,6 +170,9 @@ public sealed class LanguageManager
                 break;
             case ContentControl content when content.Content is string value && map.TryGetValue(value, out var translated):
                 SetTranslatedValue(content, ContentControl.ContentProperty, translated);
+                break;
+            case Run run when BindingOperations.GetBindingExpression(run, Run.TextProperty) is { } runBinding:
+                runBinding.UpdateTarget();
                 break;
             case Run run when map.TryGetValue(run.Text, out var translated):
                 SetTranslatedValue(run, Run.TextProperty, translated);

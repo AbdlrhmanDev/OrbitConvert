@@ -5,15 +5,15 @@
         <DataTemplate x:Key="ToolCardTemplate">
             <Button Style="{StaticResource CardButton}" Margin="0,0,12,12" IsEnabled="{Binding Available}"
                     Command="{Binding DataContext.RunCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" CommandParameter="{Binding}"
-                    AutomationProperties.Name="{Binding Title}" AutomationProperties.HelpText="{Binding Description}">
+                    AutomationProperties.Name="{Binding Title, Converter={StaticResource LocalizedString}}" AutomationProperties.HelpText="{Binding Description, Converter={StaticResource LocalizedString}}">
                 <StackPanel>
                     <Border Width="40" Height="40" CornerRadius="10" Background="{DynamicResource Brush.SurfaceAlt}" HorizontalAlignment="Left">
                         <ContentControl Style="{StaticResource StrokeIcon}" Width="20" Height="20" Tag="{Binding Icon}"
                                         Foreground="{Binding Category, Converter={StaticResource CategoryToBrush}}" />
                     </Border>
-                    <TextBlock Text="{Binding Title}" FontSize="16" FontWeight="SemiBold" Margin="0,12,0,0" Foreground="{DynamicResource Brush.Text}" />
-                    <TextBlock Text="{Binding Description}" Style="{StaticResource Text.Caption}" FontSize="13" TextWrapping="Wrap" LineHeight="19" Margin="0,12,0,0" />
-                    <TextBlock Text="{Binding Tag}" Margin="0,12,0,0" TextWrapping="Wrap">
+                    <TextBlock Text="{Binding Title, Converter={StaticResource LocalizedString}}" FontSize="16" FontWeight="SemiBold" Margin="0,12,0,0" Foreground="{DynamicResource Brush.Text}" />
+                    <TextBlock Text="{Binding Description, Converter={StaticResource LocalizedString}}" Style="{StaticResource Text.Caption}" FontSize="13" TextWrapping="Wrap" LineHeight="19" Margin="0,12,0,0" />
+                    <TextBlock Text="{Binding Tag, Converter={StaticResource LocalizedString}}" Margin="0,12,0,0" TextWrapping="Wrap">
                         <TextBlock.Style>
                             <Style TargetType="TextBlock" BasedOn="{StaticResource Text.Mono}">
                                 <Setter Property="FontSize" Value="11" />
@@ -35,28 +35,28 @@
 
     <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
         <StackPanel Margin="32">
-            <TextBlock Text="{Binding Title}" Style="{StaticResource Text.Display}" />
-            <TextBlock Text="{Binding Subtitle}" Style="{StaticResource Text.Secondary}" FontSize="14" Foreground="{DynamicResource Brush.TextTertiary}" Margin="0,4,0,20" />
+            <TextBlock Text="{Binding Title, Converter={StaticResource LocalizedString}}" Style="{StaticResource Text.Display}" />
+            <TextBlock Text="{Binding Subtitle, Converter={StaticResource LocalizedString}}" Style="{StaticResource Text.Secondary}" FontSize="14" Foreground="{DynamicResource Brush.TextTertiary}" Margin="0,4,0,20" />
 
             <ItemsControl ItemsSource="{Binding Cards}" ItemTemplate="{StaticResource ToolCardTemplate}" ItemsPanel="{StaticResource CardGrid}" Focusable="False" />
 
-            <TextBlock Text="Working…" Style="{StaticResource Text.Secondary}" Margin="0,4,0,0"
+            <TextBlock Text="{DynamicResource Working}" Style="{StaticResource Text.Secondary}" Margin="0,4,0,0"
                        Visibility="{Binding IsBusy, Converter={StaticResource BoolToVisibility}}" />
             <Border Style="{StaticResource Card}" Margin="0,0,12,12" Visibility="{Binding InspectResult, Converter={StaticResource NullToVisibility}}">
                 <StackPanel>
                     <DockPanel Margin="0,0,0,8">
-                        <Button DockPanel.Dock="Right" Content="&#xE711;" Style="{StaticResource IconButton}" ToolTip="Close" Command="{Binding CloseInspectCommand}" />
-                        <TextBlock Text="{Binding InspectTitle}" Style="{StaticResource Text.Subtitle}" VerticalAlignment="Center" />
+                        <Button DockPanel.Dock="Right" Content="&#xE711;" Style="{StaticResource IconButton}" ToolTip="{DynamicResource Close}" Command="{Binding CloseInspectCommand}" />
+                        <TextBlock Text="{Binding InspectTitle, Converter={StaticResource LocalizedString}}" Style="{StaticResource Text.Subtitle}" VerticalAlignment="Center" />
                     </DockPanel>
                     <TextBox Text="{Binding InspectResult, Mode=OneWay}" IsReadOnly="True" TextWrapping="Wrap" BorderThickness="0"
                              Background="Transparent" FontFamily="{StaticResource MonoFont}" FontSize="12.5"
-                             AutomationProperties.Name="Inspection result" />
+                             AutomationProperties.Name="{DynamicResource InspectionResult}" />
                 </StackPanel>
             </Border>
 
             <!-- Archives live with the PDF tools: both are file-level operations. -->
             <StackPanel Visibility="{Binding IsPdf, Converter={StaticResource BoolToVisibility}}">
-                <TextBlock Text="Archives" Style="{StaticResource Text.Section}" Margin="0,12,0,10" />
+                <TextBlock Text="{DynamicResource Archives}" Style="{StaticResource Text.Section}" Margin="0,12,0,10" />
                 <ItemsControl ItemsSource="{Binding ArchiveTools}" ItemTemplate="{StaticResource ToolCardTemplate}" ItemsPanel="{StaticResource CardGrid}" Focusable="False" />
             </StackPanel>
         </StackPanel>

@@ -5,11 +5,11 @@
         Width="84" Height="84" WindowStyle="None" AllowsTransparency="True" Background="Transparent"
         Topmost="True" ShowInTaskbar="False" ResizeMode="NoResize" ShowActivated="False" AllowDrop="True"
         AutomationProperties.Name="OrbitConvert drop zone. Drop files here to convert them."
-        ToolTip="Drop files here to convert them. Drag to move. Right-click for options.">
+        ToolTip="{DynamicResource DropZoneHint}">
     <Window.ContextMenu>
         <ContextMenu>
-            <MenuItem Header="Open OrbitConvert" Click="OnOpenClick" />
-            <MenuItem Header="Hide drop zone" Click="OnHideClick" />
+            <MenuItem Header="{DynamicResource OpenOrbitConvert}" Click="OnOpenClick" />
+            <MenuItem Header="{DynamicResource HideDropZone}" Click="OnHideClick" />
         </ContextMenu>
     </Window.ContextMenu>
     <Grid x:Name="Root" RenderTransformOrigin="0.5,0.5" Margin="6">

@@ -4,6 +4,7 @@
                     xmlns:conv="clr-namespace:OrbitConvert.App.Converters">
 
     <conv:BoolToVisibilityConverter x:Key="BoolToVisibility" />
+    <conv:LocalizedStringConverter x:Key="LocalizedString" />
     <conv:NullToVisibilityConverter x:Key="NullToVisibility" />
     <conv:InverseBoolConverter x:Key="InverseBool" />
     <conv:EnumEqualsConverter x:Key="EnumEquals" />

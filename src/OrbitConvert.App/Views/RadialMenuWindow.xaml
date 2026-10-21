@@ -26,10 +26,10 @@
 
         <!-- Accessible list of the drawn segments for screen readers and UI Automation. -->
         <ItemsControl ItemsSource="{Binding Items}" Opacity="0" Focusable="False" HorizontalAlignment="Left" VerticalAlignment="Top"
-                      AutomationProperties.Name="Choices">
+                      AutomationProperties.Name="{DynamicResource Choices}">
             <ItemsControl.ItemTemplate>
                 <DataTemplate>
-                    <Button AutomationProperties.Name="{Binding AccessibleName}" AutomationProperties.HelpText="{Binding ToolTip}"
+                    <Button AutomationProperties.Name="{Binding AccessibleName, Converter={StaticResource LocalizedString}}" AutomationProperties.HelpText="{Binding ToolTip, Converter={StaticResource LocalizedString}}"
                             Command="{Binding DataContext.ActivateCommand, RelativeSource={RelativeSource AncestorType=Window}}"
                             CommandParameter="{Binding}" Width="1" Height="1" MinHeight="0" Padding="0" Focusable="False" />
                 </DataTemplate>
@@ -38,11 +38,11 @@
 
         <!-- Core: always says what will happen. -->
         <StackPanel Width="124" HorizontalAlignment="Center" VerticalAlignment="Center" IsHitTestVisible="False">
-            <TextBlock Text="{Binding CoreTop}" FontFamily="{StaticResource MonoFont}" FontSize="9.5" Foreground="{DynamicResource Brush.RadialAccentText}"
+            <TextBlock Text="{Binding CoreTop, Converter={StaticResource LocalizedString}}" FontFamily="{StaticResource MonoFont}" FontSize="9.5" Foreground="{DynamicResource Brush.RadialAccentText}"
                        HorizontalAlignment="Center" TextTrimming="CharacterEllipsis" MaxWidth="118" />
-            <TextBlock Text="{Binding CoreMain}" FontSize="18" FontWeight="Bold" Foreground="{DynamicResource Brush.RadialItemText}"
+            <TextBlock Text="{Binding CoreMain, Converter={StaticResource LocalizedString}}" FontSize="18" FontWeight="Bold" Foreground="{DynamicResource Brush.RadialItemText}"
                        HorizontalAlignment="Center" TextTrimming="CharacterEllipsis" MaxWidth="124" Margin="0,3,0,3" />
-            <TextBlock Text="{Binding CoreSub}" FontFamily="{StaticResource MonoFont}" FontSize="10" Foreground="{DynamicResource Brush.RadialItemHint}"
+            <TextBlock Text="{Binding CoreSub, Converter={StaticResource LocalizedString}}" FontFamily="{StaticResource MonoFont}" FontSize="10" Foreground="{DynamicResource Brush.RadialItemHint}"
                        HorizontalAlignment="Center" TextTrimming="CharacterEllipsis" MaxWidth="118" />
         </StackPanel>
 
@@ -51,16 +51,16 @@
                 Background="{DynamicResource Brush.RadialCenter}" BorderBrush="#FF6B5E" BorderThickness="1"
                 Visibility="{Binding IsFailed, Converter={StaticResource BoolToVisibility}}">
             <StackPanel>
-                <TextBlock Text="{Binding ErrorText}" FontSize="12" TextWrapping="Wrap" MaxHeight="48" TextTrimming="CharacterEllipsis"
-                           Foreground="{DynamicResource Brush.RadialItemText}" ToolTip="{Binding ErrorText}" />
-                <Button Content="Details" Style="{StaticResource SubtleButton}" FontSize="12" Padding="8,3" Margin="0,4,0,0"
+                <TextBlock Text="{Binding ErrorText, Converter={StaticResource LocalizedString}}" FontSize="12" TextWrapping="Wrap" MaxHeight="48" TextTrimming="CharacterEllipsis"
+                           Foreground="{DynamicResource Brush.RadialItemText}" ToolTip="{Binding ErrorText, Converter={StaticResource LocalizedString}}" />
+                <Button Content="{DynamicResource Details}" Style="{StaticResource SubtleButton}" FontSize="12" Padding="8,3" Margin="0,4,0,0"
                         Foreground="{DynamicResource Brush.RadialAccentText}" HorizontalAlignment="Left" Command="{Binding ShowDetailsCommand}" />
             </StackPanel>
         </Border>
 
         <!-- Keyboard legend, as in the identity sheet. -->
         <TextBlock VerticalAlignment="Bottom" HorizontalAlignment="Center" Margin="0,0,0,6" FontFamily="{StaticResource MonoFont}" FontSize="10"
-                   Foreground="{DynamicResource Brush.RadialItemHint}" Text="← → move   Enter choose   Esc dismiss"
+                   Foreground="{DynamicResource Brush.RadialItemHint}" Text="{DynamicResource RadialKeyboardHelp}"
                    Visibility="{Binding IsChoosing, Converter={StaticResource BoolToVisibility}}" />
     </Grid>
 </Window>

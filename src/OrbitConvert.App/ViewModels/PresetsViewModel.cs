@@ -13,7 +13,7 @@ public sealed partial class PresetCardViewModel(PresetsViewModel owner, Conversi
     public string Name => Preset.BuiltIn ? owner.Localize(Preset.Name) : Preset.Name;
     public string Tag => Preset.Tag;
     public string Category => Preset.Category;
-    public string Summary => Preset.BuiltIn ? owner.Localize(Preset.Summary) : Preset.Summary;
+    public string Summary => Preset.BuiltIn ? owner.LocalizeMultiline(Preset.Summary) : Preset.Summary;
     public bool CanDelete => !Preset.BuiltIn;
     public bool Starred => Preset.Starred;
     public string StarToolTip => owner.Localize(Starred ? "Remove from the Orbit Menu" : "Show in the Orbit Menu");
@@ -61,6 +61,12 @@ public sealed partial class PresetsViewModel : ObservableObject
     [ObservableProperty] private string? _message;
 
     internal string Localize(string value) => _language.TranslateLiteral(value);
+
+    internal string LocalizeMultiline(string value) => string.Join(
+        "\n",
+        value.Replace("\r\n", "\n", StringComparison.Ordinal)
+            .Split('\n')
+            .Select(_language.TranslateLiteral));
 
     public void Refresh()
     {

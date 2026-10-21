@@ -1,11 +1,11 @@
 <Window x:Class="OrbitConvert.App.Views.ShakeCatcherWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Drop to convert"
+        Title="{DynamicResource DropToConvert}"
         Width="170" Height="170" WindowStyle="None" AllowsTransparency="True" Background="Transparent"
         Topmost="True" ShowInTaskbar="False" ResizeMode="NoResize" ShowActivated="False" AllowDrop="True"
         WindowStartupLocation="Manual" Opacity="0"
-        AutomationProperties.Name="Drop files here to convert them">
+        AutomationProperties.Name="{DynamicResource DropFilesLong}">
     <Grid Margin="8">
         <Ellipse Fill="{DynamicResource Brush.RadialDisc}" Stroke="{DynamicResource Brush.Accent}" StrokeThickness="3" StrokeDashArray="4 3">
             <Ellipse.Effect>
@@ -14,7 +14,7 @@
         </Ellipse>
         <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
             <Image Source="/OrbitConvert;component/Assets/logo.png" Width="44" Height="44" />
-            <TextBlock Text="Drop to convert" FontWeight="SemiBold" Margin="0,8,0,0" HorizontalAlignment="Center"
+            <TextBlock Text="{DynamicResource DropToConvert}" FontWeight="SemiBold" Margin="0,8,0,0" HorizontalAlignment="Center"
                        Foreground="{DynamicResource Brush.Text}" />
         </StackPanel>
     </Grid>
