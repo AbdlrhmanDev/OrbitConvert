@@ -7,39 +7,39 @@
                 <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Bottom">
                     <Border CornerRadius="8" Padding="3" Background="{DynamicResource Brush.SurfaceAlt}" BorderBrush="{DynamicResource Brush.Border}" BorderThickness="1">
                         <StackPanel Orientation="Horizontal">
-                            <RadioButton Content="All" Style="{StaticResource Segment}" GroupName="HistoryFilter"
+                            <RadioButton Content="{DynamicResource All}" Style="{StaticResource Segment}" GroupName="HistoryFilter"
                                          IsChecked="{Binding Filter, Converter={StaticResource EnumEquals}, ConverterParameter=All}" />
-                            <RadioButton Content="Succeeded" Style="{StaticResource Segment}" GroupName="HistoryFilter"
+                            <RadioButton Content="{DynamicResource Succeeded}" Style="{StaticResource Segment}" GroupName="HistoryFilter"
                                          IsChecked="{Binding Filter, Converter={StaticResource EnumEquals}, ConverterParameter=Succeeded}" />
-                            <RadioButton Content="Failed" Style="{StaticResource Segment}" GroupName="HistoryFilter"
+                            <RadioButton Content="{DynamicResource Failed}" Style="{StaticResource Segment}" GroupName="HistoryFilter"
                                          IsChecked="{Binding Filter, Converter={StaticResource EnumEquals}, ConverterParameter=Failed}" />
                         </StackPanel>
                     </Border>
-                    <Button Content="Clear" Style="{StaticResource OutlineButton}" Foreground="{DynamicResource Brush.TextTertiary}" Padding="12,7" Margin="8,0,0,0"
-                            Command="{Binding ClearCommand}" ToolTip="Clear history (converted files are kept)" />
+                    <Button Content="{DynamicResource Clear}" Style="{StaticResource OutlineButton}" Foreground="{DynamicResource Brush.TextTertiary}" Padding="12,7" Margin="8,0,0,0"
+                            Command="{Binding ClearCommand}" ToolTip="{DynamicResource ClearHistoryHint}" />
                 </StackPanel>
-                <TextBlock Text="History" Style="{StaticResource Text.Display}" />
+                <TextBlock Text="{DynamicResource History}" Style="{StaticResource Text.Display}" />
             </DockPanel>
-            <TextBlock Text="Stored only on this computer. Turn history off in Settings → Privacy." Style="{StaticResource Text.Secondary}" FontSize="14"
+            <TextBlock Text="{DynamicResource HistoryLocal}" Style="{StaticResource Text.Secondary}" FontSize="14"
                        Foreground="{DynamicResource Brush.TextTertiary}" Margin="0,4,0,20" />
-            <TextBlock Text="{Binding Message}" Style="{StaticResource Text.Secondary}" Margin="0,0,0,10"
+            <TextBlock Text="{Binding Message, Converter={StaticResource LocalizedString}}" Style="{StaticResource Text.Secondary}" Margin="0,0,0,10"
                        Visibility="{Binding Message, Converter={StaticResource NullToVisibility}}" />
-            <TextBlock Text="History is turned off, so new conversions are not recorded." Style="{StaticResource Text.Secondary}"
+            <TextBlock Text="{DynamicResource HistoryOff}" Style="{StaticResource Text.Secondary}"
                        Foreground="{DynamicResource Brush.Warning}" Margin="0,0,0,10"
                        Visibility="{Binding HistoryDisabled, Converter={StaticResource BoolToVisibility}}" />
         </StackPanel>
 
         <Grid>
             <Border Style="{StaticResource Card}" VerticalAlignment="Top" Visibility="{Binding IsEmpty, Converter={StaticResource BoolToVisibility}}">
-                <TextBlock Text="No conversions to show." Style="{StaticResource Text.Secondary}" />
+                <TextBlock Text="{DynamicResource NoConversions}" Style="{StaticResource Text.Secondary}" />
             </Border>
             <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled"
                           Visibility="{Binding IsEmpty, Converter={StaticResource BoolToVisibility}, ConverterParameter=Invert}">
-                <ItemsControl ItemsSource="{Binding Entries}" Focusable="False" AutomationProperties.Name="Conversion history">
+                <ItemsControl ItemsSource="{Binding Entries}" Focusable="False" AutomationProperties.Name="{DynamicResource ConversionHistory}">
                     <ItemsControl.ItemTemplate>
                         <DataTemplate>
                             <Border Margin="0,0,0,6" Padding="16,14" CornerRadius="10" Background="{DynamicResource Brush.Surface}"
-                                    BorderBrush="{DynamicResource Brush.Border}" BorderThickness="1" AutomationProperties.Name="{Binding InputSummary}">
+                                    BorderBrush="{DynamicResource Brush.Border}" BorderThickness="1" AutomationProperties.Name="{Binding InputSummary, Converter={StaticResource LocalizedString}}">
                                 <Grid>
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="10" />
@@ -49,20 +49,20 @@
                                     <Ellipse x:Name="Dot" Width="8" Height="8" Fill="{DynamicResource Brush.AccentText}" VerticalAlignment="Center" />
                                     <StackPanel Grid.Column="1" Margin="14,0">
                                         <TextBlock FontSize="14" Foreground="{DynamicResource Brush.Text}" TextTrimming="CharacterEllipsis">
-                                            <Run Text="{Binding InputSummary, Mode=OneWay}" /><Run Text=" → " Foreground="{DynamicResource Brush.TextTertiary}" /><Run Text="{Binding TargetLabel, Mode=OneWay}" />
+                                            <Run Text="{Binding InputSummary, Mode=OneWay, Converter={StaticResource LocalizedString}}" /><Run Text=" → " Foreground="{DynamicResource Brush.TextTertiary}" /><Run Text="{Binding TargetLabel, Mode=OneWay, Converter={StaticResource LocalizedString}}" />
                                         </TextBlock>
-                                        <TextBlock x:Name="Sub" Style="{StaticResource Text.Caption}" Margin="0,3,0,0" TextTrimming="CharacterEllipsis" ToolTip="{Binding Outputs[0]}">
-                                            <Run Text="{Binding Timestamp, Converter={StaticResource RelativeTime}, Mode=OneWay}" /><Run Text=" · " /><Run Text="{Binding Outputs[0], Mode=OneWay}" />
+                                        <TextBlock x:Name="Sub" Style="{StaticResource Text.Caption}" Margin="0,3,0,0" TextTrimming="CharacterEllipsis" ToolTip="{Binding Outputs[0], Converter={StaticResource LocalizedString}}">
+                                            <Run Text="{Binding Timestamp, Converter={StaticResource RelativeTime}, Mode=OneWay}" /><Run Text=" · " /><Run Text="{Binding Outputs[0], Mode=OneWay, Converter={StaticResource LocalizedString}}" />
                                         </TextBlock>
-                                        <TextBlock x:Name="Error" Text="{Binding Error}" Style="{StaticResource Text.Caption}" Foreground="{DynamicResource Brush.Danger}"
+                                        <TextBlock x:Name="Error" Text="{Binding Error, Converter={StaticResource LocalizedString}}" Style="{StaticResource Text.Caption}" Foreground="{DynamicResource Brush.Danger}"
                                                    Margin="0,3,0,0" TextWrapping="Wrap" Visibility="Collapsed" />
                                     </StackPanel>
                                     <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
-                                        <Button x:Name="Reveal" Content="Show in folder" Style="{StaticResource SmallOutlineButton}"
+                                        <Button x:Name="Reveal" Content="{DynamicResource ShowFolder}" Style="{StaticResource SmallOutlineButton}"
                                                 Command="{Binding DataContext.RevealCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" CommandParameter="{Binding}" />
-                                        <Button x:Name="Retry" Content="Convert again" Style="{StaticResource SmallOutlineButton}" Margin="6,0,0,0"
+                                        <Button x:Name="Retry" Content="{DynamicResource ConvertAgain}" Style="{StaticResource SmallOutlineButton}" Margin="6,0,0,0"
                                                 Command="{Binding DataContext.RetryCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" CommandParameter="{Binding}" />
-                                        <Button Content="✕" Style="{StaticResource SmallOutlineButton}" Margin="6,0,0,0" ToolTip="Remove from history"
+                                        <Button Content="✕" Style="{StaticResource SmallOutlineButton}" Margin="6,0,0,0" ToolTip="{DynamicResource RemoveHistory}"
                                                 Foreground="{DynamicResource Brush.TextTertiary}"
                                                 Command="{Binding DataContext.RemoveCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" CommandParameter="{Binding}" />
                                     </StackPanel>
@@ -73,7 +73,7 @@
                                     <Setter TargetName="Dot" Property="Fill" Value="{DynamicResource Brush.Danger}" />
                                     <Setter TargetName="Error" Property="Visibility" Value="Visible" />
                                     <Setter TargetName="Sub" Property="Visibility" Value="Collapsed" />
-                                    <Setter TargetName="Retry" Property="Content" Value="Retry" />
+                                    <Setter TargetName="Retry" Property="Content" Value="{DynamicResource Retry}" />
                                 </DataTrigger>
                             </DataTemplate.Triggers>
                         </DataTemplate>

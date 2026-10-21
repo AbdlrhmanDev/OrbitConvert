@@ -23,24 +23,44 @@ next to the original. A full desktop app handles batches, options, PDF tools and
 No account. No uploads. No telemetry.
 
 <p align="center">
-  <a href="https://github.com/AbdlrhmanDev/OrbitConvert/releases/latest"><strong>Download OrbitConvert for Windows</strong></a>
+  <a href="https://github.com/AbdlrhmanDev/OrbitConvert/releases/latest"><strong>Download the latest Windows release</strong></a>
 </p>
 
-## Download and install
+## Download
+
+### Windows installer (recommended)
+
+The installer is the easiest option. It adds OrbitConvert to the Start menu and File Explorer.
+
+1. Go to the [latest release](https://github.com/AbdlrhmanDev/OrbitConvert/releases/latest).
+2. Under **Assets**, choose the installer for your PC:
+   - Most Windows PCs: download the file ending in **`win-x64.msi`**.
+   - Windows on ARM: download the file ending in **`win-arm64.msi`**.
+3. Double-click the downloaded MSI and follow the setup steps. Administrator rights are not required.
+4. Open **OrbitConvert** from the Windows Start menu.
+
+> **Windows SmartScreen:** releases are not code-signed yet, so Windows may show **Unknown publisher**.
+> Download only from this repository, verify the checksum if needed, then select
+> **More info → Run anyway**.
+
+### Portable version
+
+Choose the portable ZIP if you do not want to install the app:
 
 1. Open the [latest release](https://github.com/AbdlrhmanDev/OrbitConvert/releases/latest).
-2. Download **`OrbitConvert-<version>-win-x64.msi`**.
-3. Open the downloaded file and follow the installer. Administrator rights are not required.
-4. Start OrbitConvert from the Start menu.
+2. Under **Assets**, choose the portable file for your PC:
+   - Most Windows PCs: download the file ending in **`win-x64-portable.zip`**.
+   - Windows on ARM: download the file ending in **`win-arm64-portable.zip`**.
+3. Right-click the ZIP, select **Extract All**, then open the extracted folder.
+4. Run **`OrbitConvert.exe`**.
 
-> Releases are not code-signed yet, so Windows SmartScreen may show **Unknown publisher**. Verify the
-> file with `SHA256SUMS.txt`, then choose **More info → Run anyway** only when the checksum matches.
+The portable build includes everything needed to run; .NET is not required. It does not automatically
+add Start menu shortcuts or File Explorer integration.
 
-Want a version that does not install? Download **`OrbitConvert-<version>-win-x64-portable.zip`**,
-extract it to a folder and run `OrbitConvert.exe`. The app is self-contained; .NET is not required.
+### After installation
 
-After installation, open **Settings → Conversion tools**. Images, ZIP and core PDF tools work
-immediately. Use the Download buttons to add FFmpeg, Pandoc, 7-Zip, LibreOffice or Ghostscript when needed.
+Images, ZIP files and core PDF tools work immediately. For video, audio, document, 7z or advanced PDF
+conversion, open **Settings → Conversion tools** and download the tool shown beside that format.
 
 <p align="center">
   <img src="assets/screenshots/radial-menu.png" width="360" alt="Radial menu offering formats for a video file">

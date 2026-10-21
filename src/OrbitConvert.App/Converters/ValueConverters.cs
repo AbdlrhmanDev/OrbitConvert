@@ -2,9 +2,19 @@ using System.Globalization;
 using System.Windows;
 using System.Windows.Data;
 using System.Windows.Media;
+using OrbitConvert.App.Services;
 using OrbitConvert.Core.Queue;
 
 namespace OrbitConvert.App.Converters;
+
+/// <summary>Translates display-only values produced by view-model bindings.</summary>
+public sealed class LocalizedStringConverter : IValueConverter
+{
+    public object? Convert(object? value, Type targetType, object? parameter, CultureInfo culture) =>
+        value is string text ? LanguageManager.Current?.TranslateLiteral(text) ?? text : value;
+
+    public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture) => value;
+}
 
 /// <summary>true → Visible. Pass ConverterParameter="Invert" to reverse.</summary>
 public sealed class BoolToVisibilityConverter : IValueConverter

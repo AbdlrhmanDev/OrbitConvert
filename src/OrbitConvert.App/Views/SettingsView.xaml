@@ -18,95 +18,95 @@
 
     <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
         <StackPanel Margin="32" MaxWidth="880" HorizontalAlignment="Left">
-            <TextBlock Text="Settings" Style="{StaticResource Text.Display}" Margin="0,0,0,4" />
-            <TextBlock Text="Files never leave this PC. The app goes online only for downloads and update checks that you request." Style="{StaticResource Text.Secondary}" FontSize="14" Foreground="{DynamicResource Brush.TextTertiary}" Margin="0,0,0,22" />
+            <TextBlock Text="{DynamicResource Settings}" Style="{StaticResource Text.Display}" Margin="0,0,0,4" />
+            <TextBlock Text="{DynamicResource SettingsIntro}" Style="{StaticResource Text.Secondary}" FontSize="14" Foreground="{DynamicResource Brush.TextTertiary}" Margin="0,0,0,22" />
 
             <!-- Output -->
             <Border Style="{StaticResource SectionCard}">
                 <StackPanel>
-                    <TextBlock Text="Output" Style="{StaticResource Text.Subtitle}" Margin="0,0,0,8" />
-                    <CheckBox Content="Save converted files beside the originals" IsChecked="{Binding SaveBesideOriginal}" />
+                    <TextBlock Text="{DynamicResource Output}" Style="{StaticResource Text.Subtitle}" Margin="0,0,0,8" />
+                    <CheckBox Content="{DynamicResource SaveBesideOriginals}" IsChecked="{Binding SaveBesideOriginal}" />
                     <DockPanel Style="{StaticResource Row}" IsEnabled="{Binding SaveBesideOriginal, Converter={StaticResource InverseBool}}">
-                        <TextBlock Text="Default folder" Style="{StaticResource SettingLabel}" Width="150" />
-                        <Button DockPanel.Dock="Right" Content="Browse…" Margin="8,0,0,0" Command="{Binding BrowseOutputFolderCommand}" />
-                        <TextBox Text="{Binding CustomOutputFolder}" AutomationProperties.Name="Default output folder" />
+                        <TextBlock Text="{DynamicResource DefaultFolder}" Style="{StaticResource SettingLabel}" Width="150" />
+                        <Button DockPanel.Dock="Right" Content="{DynamicResource Browse}" Margin="8,0,0,0" Command="{Binding BrowseOutputFolderCommand}" />
+                        <TextBox Text="{Binding CustomOutputFolder}" AutomationProperties.Name="{DynamicResource DefaultOutputFolder}" />
                     </DockPanel>
                     <DockPanel Style="{StaticResource Row}">
-                        <TextBlock Text="Name collisions" Style="{StaticResource SettingLabel}" Width="150" />
+                        <TextBlock Text="{DynamicResource NameCollisions}" Style="{StaticResource SettingLabel}" Width="150" />
                         <ComboBox ItemsSource="{Binding CollisionChoices}" DisplayMemberPath="Label" SelectedValuePath="Value" SelectedValue="{Binding Collision}"
-                                  Width="280" HorizontalAlignment="Left" AutomationProperties.Name="Name collisions" />
+                                  Width="280" HorizontalAlignment="Left" AutomationProperties.Name="{DynamicResource NameCollisions}" />
                     </DockPanel>
-                    <TextBlock Text="Original files are never overwritten, whichever option you choose." Style="{StaticResource Hint}" />
+                    <TextBlock Text="{DynamicResource NeverOverwrite}" Style="{StaticResource Hint}" />
                 </StackPanel>
             </Border>
 
             <!-- Appearance -->
             <Border Style="{StaticResource SectionCard}">
                 <StackPanel>
-                    <TextBlock Text="Appearance &amp; language" Style="{StaticResource Text.Subtitle}" Margin="0,0,0,8" />
+                    <TextBlock Text="{DynamicResource AppearanceLanguage}" Style="{StaticResource Text.Subtitle}" Margin="0,0,0,8" />
                     <DockPanel Style="{StaticResource Row}">
-                        <TextBlock Text="Theme" Style="{StaticResource SettingLabel}" Width="150" />
+                        <TextBlock Text="{DynamicResource Theme}" Style="{StaticResource SettingLabel}" Width="150" />
                         <ComboBox ItemsSource="{Binding Themes}" DisplayMemberPath="Label" SelectedValuePath="Value" SelectedValue="{Binding Theme}"
-                                  Width="220" HorizontalAlignment="Left" AutomationProperties.Name="Theme" />
+                                  Width="220" HorizontalAlignment="Left" AutomationProperties.Name="{DynamicResource Theme}" />
                     </DockPanel>
                     <DockPanel Style="{StaticResource Row}">
-                        <TextBlock Text="Language" Style="{StaticResource SettingLabel}" Width="150" />
+                        <TextBlock Text="{DynamicResource Language}" Style="{StaticResource SettingLabel}" Width="150" />
                         <ComboBox ItemsSource="{Binding Languages}" DisplayMemberPath="Label" SelectedValuePath="Value" SelectedValue="{Binding Language}"
-                                  Width="220" HorizontalAlignment="Left" AutomationProperties.Name="Language" />
+                                  Width="220" HorizontalAlignment="Left" AutomationProperties.Name="{DynamicResource Language}" />
                     </DockPanel>
-                    <TextBlock Text="English and Arabic are included. Arabic applies right-to-left layout immediately." Style="{StaticResource Hint}" />
+                    <TextBlock Text="{DynamicResource LanguageHint}" Style="{StaticResource Hint}" />
                 </StackPanel>
             </Border>
 
             <!-- Activation -->
             <Border Style="{StaticResource SectionCard}">
                 <StackPanel>
-                    <TextBlock Text="Quick conversion" Style="{StaticResource Text.Subtitle}" Margin="0,0,0,4" />
-                    <TextBlock Text="Ways to open the radial menu without opening this window." Style="{StaticResource Hint}" />
+                    <TextBlock Text="{DynamicResource QuickConversion}" Style="{StaticResource Text.Subtitle}" Margin="0,0,0,4" />
+                    <TextBlock Text="{DynamicResource QuickConversionHint}" Style="{StaticResource Hint}" />
 
-                    <CheckBox Content="Explorer context menu: “Convert with OrbitConvert”" IsChecked="{Binding ContextMenuEnabled}" Margin="0,8,0,0" />
-                    <TextBlock Text="Right-click files in File Explorer. On Windows 11 the entry is under “Show more options” (Shift+F10)." Style="{StaticResource Hint}" Margin="26,2,0,6" />
-                    <CheckBox Content="“Send to” menu entry (passes all selected files at once)" IsChecked="{Binding SendToEnabled}" />
-                    <TextBlock Text="{Binding ShellMessage}" Style="{StaticResource Hint}" Foreground="{DynamicResource Brush.Accent}" Margin="26,4,0,6"
+                    <CheckBox Content="{DynamicResource ExplorerMenu}" IsChecked="{Binding ContextMenuEnabled}" Margin="0,8,0,0" />
+                    <TextBlock Text="{DynamicResource ExplorerMenuHint}" Style="{StaticResource Hint}" Margin="26,2,0,6" />
+                    <CheckBox Content="{DynamicResource SendToMenu}" IsChecked="{Binding SendToEnabled}" />
+                    <TextBlock Text="{Binding ShellMessage, Converter={StaticResource LocalizedString}}" Style="{StaticResource Hint}" Foreground="{DynamicResource Brush.Accent}" Margin="26,4,0,6"
                                Visibility="{Binding ShellMessage, Converter={StaticResource NullToVisibility}}" />
 
-                    <CheckBox Content="Keyboard shortcut for files selected in File Explorer" IsChecked="{Binding HotkeyEnabled}" Margin="0,12,0,0" />
+                    <CheckBox Content="{DynamicResource KeyboardShortcut}" IsChecked="{Binding HotkeyEnabled}" Margin="0,12,0,0" />
                     <StackPanel Orientation="Horizontal" Margin="26,8,0,0" IsEnabled="{Binding HotkeyEnabled}">
                         <CheckBox Content="Ctrl" IsChecked="{Binding HotkeyCtrl}" Margin="0,0,12,0" />
                         <CheckBox Content="Alt" IsChecked="{Binding HotkeyAlt}" Margin="0,0,12,0" />
                         <CheckBox Content="Shift" IsChecked="{Binding HotkeyShift}" Margin="0,0,12,0" />
                         <CheckBox Content="Win" IsChecked="{Binding HotkeyWin}" Margin="0,0,12,0" />
                         <TextBlock Text="+" VerticalAlignment="Center" Margin="0,0,8,0" Foreground="{DynamicResource Brush.Text}" />
-                        <TextBox Text="{Binding HotkeyKey, UpdateSourceTrigger=LostFocus}" Width="70" AutomationProperties.Name="Shortcut key" />
+                        <TextBox Text="{Binding HotkeyKey, UpdateSourceTrigger=LostFocus}" Width="70" AutomationProperties.Name="{DynamicResource ShortcutKey}" />
                     </StackPanel>
-                    <TextBlock Text="{Binding HotkeyStatus}" Style="{StaticResource Hint}" Margin="26,6,0,6" />
+                    <TextBlock Text="{Binding HotkeyStatus, Converter={StaticResource LocalizedString}}" Style="{StaticResource Hint}" Margin="26,6,0,6" />
 
-                    <CheckBox Content="Floating drop zone (drag files onto it from anywhere)" IsChecked="{Binding DropZoneEnabled}" Margin="0,8,0,0" />
-                    <TextBlock Text="A small always-on-top circle. Drag it to move it; right-click it to hide it." Style="{StaticResource Hint}" Margin="26,2,0,6" />
+                    <CheckBox Content="{DynamicResource FloatingDropZone}" IsChecked="{Binding DropZoneEnabled}" Margin="0,8,0,0" />
+                    <TextBlock Text="{DynamicResource FloatingDropZoneHint}" Style="{StaticResource Hint}" Margin="26,2,0,6" />
 
                     <CheckBox IsChecked="{Binding ShakeToConvertEnabled}" Margin="0,8,0,0">
-                        <TextBlock Foreground="{DynamicResource Brush.Text}"><Run Text="Shake while dragging to show a drop target " /><Run Text="(experimental)" Foreground="{DynamicResource Brush.Warning}" FontWeight="SemiBold" /></TextBlock>
+                        <TextBlock Foreground="{DynamicResource Brush.Text}"><Run Text="{DynamicResource ShakeToConvert}" /><Run Text="{DynamicResource Experimental}" Foreground="{DynamicResource Brush.Warning}" FontWeight="SemiBold" /></TextBlock>
                     </CheckBox>
                     <TextBlock Style="{StaticResource Hint}" Margin="26,2,0,0"
-                               Text="Uses a low-level mouse hook inside OrbitConvert (nothing is injected into Explorer). Windows cannot report whether files are being dragged, so any quick left-right shake with the button held shows the target; it ignores anything that is not a file." />
+                               Text="{DynamicResource ShakeHint}" />
                 </StackPanel>
             </Border>
 
             <!-- Behavior -->
             <Border Style="{StaticResource SectionCard}">
                 <StackPanel>
-                    <TextBlock Text="Behavior" Style="{StaticResource Text.Subtitle}" Margin="0,0,0,8" />
-                    <CheckBox Content="Show a notification when conversions finish" IsChecked="{Binding NotificationsEnabled}" Margin="0,0,0,6" />
-                    <CheckBox Content="Close the radial menu automatically after success" IsChecked="{Binding CloseRadialAfterSuccess}" Margin="0,0,0,6" />
-                    <CheckBox Content="Reduce motion (the Orbit Menu fades instead of scaling)" IsChecked="{Binding ReduceMotion}" Margin="0,0,0,6" />
-                    <CheckBox Content="Start with Windows, in the notification area" IsChecked="{Binding StartWithWindows}" Margin="0,0,0,6" />
-                    <TextBlock Text="Keeps the shortcut, drop target and watch folders ready after you sign in." Style="{StaticResource Hint}" Margin="26,0,0,6" />
-                    <CheckBox Content="Keep running in the notification area when the window is closed" IsChecked="{Binding RunInBackgroundWhenClosed}" Margin="0,0,0,6" />
-                    <TextBlock Text="Needed for the shortcut, drop zone and fast context-menu conversions." Style="{StaticResource Hint}" Margin="26,0,0,6" />
+                    <TextBlock Text="{DynamicResource Behavior}" Style="{StaticResource Text.Subtitle}" Margin="0,0,0,8" />
+                    <CheckBox Content="{DynamicResource NotifyFinished}" IsChecked="{Binding NotificationsEnabled}" Margin="0,0,0,6" />
+                    <CheckBox Content="{DynamicResource CloseRadial}" IsChecked="{Binding CloseRadialAfterSuccess}" Margin="0,0,0,6" />
+                    <CheckBox Content="{DynamicResource ReduceMotion}" IsChecked="{Binding ReduceMotion}" Margin="0,0,0,6" />
+                    <CheckBox Content="{DynamicResource StartWindows}" IsChecked="{Binding StartWithWindows}" Margin="0,0,0,6" />
+                    <TextBlock Text="{DynamicResource StartWindowsHint}" Style="{StaticResource Hint}" Margin="26,0,0,6" />
+                    <CheckBox Content="{DynamicResource KeepRunning}" IsChecked="{Binding RunInBackgroundWhenClosed}" Margin="0,0,0,6" />
+                    <TextBlock Text="{DynamicResource KeepRunningHint}" Style="{StaticResource Hint}" Margin="26,0,0,6" />
                     <DockPanel Style="{StaticResource Row}">
-                        <TextBlock Style="{StaticResource SettingLabel}" Width="220"><Run Text="Parallel conversions: " /><Run Text="{Binding MaxParallelJobs, Mode=OneWay}" FontWeight="SemiBold" /></TextBlock>
+                        <TextBlock Style="{StaticResource SettingLabel}" Width="220"><Run Text="{DynamicResource ParallelConversions}" /><Run Text="{Binding MaxParallelJobs, Mode=OneWay, Converter={StaticResource LocalizedString}}" FontWeight="SemiBold" /></TextBlock>
                         <Slider Minimum="1" Maximum="8" Value="{Binding MaxParallelJobs}" IsSnapToTickEnabled="True" TickFrequency="1" Width="240"
-                                HorizontalAlignment="Left" AutomationProperties.Name="Parallel conversions" />
+                                HorizontalAlignment="Left" AutomationProperties.Name="{DynamicResource ParallelConversionsLabel}" />
                     </DockPanel>
                 </StackPanel>
             </Border>
@@ -114,27 +114,27 @@
             <!-- Defaults -->
             <Border Style="{StaticResource SectionCard}">
                 <StackPanel>
-                    <TextBlock Text="Quality defaults" Style="{StaticResource Text.Subtitle}" Margin="0,0,0,8" />
+                    <TextBlock Text="{DynamicResource QualityDefaults}" Style="{StaticResource Text.Subtitle}" Margin="0,0,0,8" />
                     <DockPanel Style="{StaticResource Row}">
-                        <TextBlock Style="{StaticResource SettingLabel}" Width="220"><Run Text="Image quality: " /><Run Text="{Binding DefaultImageQuality, Mode=OneWay}" FontWeight="SemiBold" /></TextBlock>
+                        <TextBlock Style="{StaticResource SettingLabel}" Width="220"><Run Text="{DynamicResource ImageQuality}" /><Run Text="{Binding DefaultImageQuality, Mode=OneWay, Converter={StaticResource LocalizedString}}" FontWeight="SemiBold" /></TextBlock>
                         <Slider Minimum="1" Maximum="100" Value="{Binding DefaultImageQuality}" IsSnapToTickEnabled="True" TickFrequency="1" Width="240"
-                                HorizontalAlignment="Left" AutomationProperties.Name="Default image quality" />
+                                HorizontalAlignment="Left" AutomationProperties.Name="{DynamicResource DefaultImageQuality}" />
                     </DockPanel>
-                    <CheckBox Content="Remove image metadata (EXIF, GPS) by default" IsChecked="{Binding DefaultStripMetadata}" Margin="0,4,0,6" />
+                    <CheckBox Content="{DynamicResource RemoveMetadataDefault}" IsChecked="{Binding DefaultStripMetadata}" Margin="0,4,0,6" />
                     <DockPanel Style="{StaticResource Row}">
-                        <TextBlock Text="Audio bitrate" Style="{StaticResource SettingLabel}" Width="220" />
+                        <TextBlock Text="{DynamicResource AudioBitrate}" Style="{StaticResource SettingLabel}" Width="220" />
                         <ComboBox ItemsSource="{Binding Bitrates}" DisplayMemberPath="Label" SelectedValuePath="Value" SelectedValue="{Binding DefaultAudioBitrate}"
-                                  Width="180" HorizontalAlignment="Left" AutomationProperties.Name="Default audio bitrate" />
+                                  Width="180" HorizontalAlignment="Left" AutomationProperties.Name="{DynamicResource DefaultAudioBitrate}" />
                     </DockPanel>
                     <DockPanel Style="{StaticResource Row}">
-                        <TextBlock Text="Video quality" Style="{StaticResource SettingLabel}" Width="220" />
+                        <TextBlock Text="{DynamicResource VideoQuality}" Style="{StaticResource SettingLabel}" Width="220" />
                         <ComboBox ItemsSource="{Binding VideoQualities}" DisplayMemberPath="Label" SelectedValuePath="Value" SelectedValue="{Binding DefaultVideoQuality}"
-                                  Width="180" HorizontalAlignment="Left" AutomationProperties.Name="Default video quality" />
+                                  Width="180" HorizontalAlignment="Left" AutomationProperties.Name="{DynamicResource DefaultVideoQuality}" />
                     </DockPanel>
                     <DockPanel Style="{StaticResource Row}">
-                        <TextBlock Text="PDF to image resolution" Style="{StaticResource SettingLabel}" Width="220" />
+                        <TextBlock Text="{DynamicResource PdfResolution}" Style="{StaticResource SettingLabel}" Width="220" />
                         <ComboBox ItemsSource="{Binding Dpis}" DisplayMemberPath="Label" SelectedValuePath="Value" SelectedValue="{Binding DefaultPdfDpi}"
-                                  Width="180" HorizontalAlignment="Left" AutomationProperties.Name="Default PDF resolution" />
+                                  Width="180" HorizontalAlignment="Left" AutomationProperties.Name="{DynamicResource DefaultPdfResolution}" />
                     </DockPanel>
                 </StackPanel>
             </Border>
@@ -142,41 +142,41 @@
             <!-- Tools -->
             <Border Style="{StaticResource SectionCard}">
                 <StackPanel>
-                    <TextBlock Text="Conversion tools" Style="{StaticResource Text.Subtitle}" Margin="0,0,0,4" />
+                    <TextBlock Text="{DynamicResource ConversionTools}" Style="{StaticResource Text.Subtitle}" Margin="0,0,0,4" />
                     <TextBlock Style="{StaticResource Hint}"
-                               Text="Image and PDF conversion is built in. Other formats use free tools that you install or let OrbitConvert download (only when you click Download)." />
+                               Text="{DynamicResource ToolsHint}" />
                     <ItemsControl ItemsSource="{Binding Tools}" Focusable="False" Margin="0,6,0,0">
                         <ItemsControl.ItemTemplate>
                             <DataTemplate>
                                 <Border Padding="12,10" Margin="0,0,0,6" CornerRadius="8" Background="{DynamicResource Brush.SurfaceAlt}">
                                     <DockPanel>
                                         <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
-                                            <Button Content="Download" Margin="4,0" Command="{Binding InstallCommand}" ToolTip="Download a checksum-verified copy for OrbitConvert"
+                                            <Button Content="{DynamicResource Download}" Margin="4,0" Command="{Binding InstallCommand}" ToolTip="{DynamicResource DownloadVerifiedHint}"
                                                     Visibility="{Binding CanDownload, Converter={StaticResource BoolToVisibility}}" IsEnabled="{Binding IsInstalling, Converter={StaticResource InverseBool}}" />
-                                            <Button Content="Locate…" Margin="4,0" Command="{Binding BrowseCommand}" ToolTip="Choose the program file yourself" />
-                                            <Button Content="&#xE712;" Style="{StaticResource IconButton}" ToolTip="More" Click="OnMoreClick">
+                                            <Button Content="{DynamicResource Locate}" Margin="4,0" Command="{Binding BrowseCommand}" ToolTip="{DynamicResource LocateProgramHint}" />
+                                            <Button Content="&#xE712;" Style="{StaticResource IconButton}" ToolTip="{DynamicResource More}" Click="OnMoreClick">
                                                 <Button.ContextMenu>
                                                     <ContextMenu>
-                                                        <MenuItem Header="Open website" Command="{Binding OpenHomepageCommand}" />
-                                                        <MenuItem Header="Use automatic detection" Command="{Binding ClearOverrideCommand}" IsEnabled="{Binding HasOverride}" />
-                                                        <MenuItem Header="Remove downloaded copy" Command="{Binding RemoveCommand}" IsEnabled="{Binding InstalledByOrbitConvert}" />
+                                                        <MenuItem Header="{DynamicResource OpenWebsite}" Command="{Binding OpenHomepageCommand}" />
+                                                        <MenuItem Header="{DynamicResource AutomaticDetection}" Command="{Binding ClearOverrideCommand}" IsEnabled="{Binding HasOverride}" />
+                                                        <MenuItem Header="{DynamicResource RemoveDownloaded}" Command="{Binding RemoveCommand}" IsEnabled="{Binding InstalledByOrbitConvert}" />
                                                     </ContextMenu>
                                                 </Button.ContextMenu>
                                             </Button>
                                         </StackPanel>
                                         <StackPanel>
                                             <StackPanel Orientation="Horizontal">
-                                                <TextBlock Text="{Binding Name}" Style="{StaticResource Text.Subtitle}" FontSize="14" />
+                                                <TextBlock Text="{Binding Name, Converter={StaticResource LocalizedString}}" Style="{StaticResource Text.Subtitle}" FontSize="14" />
                                                 <Border x:Name="Pill" CornerRadius="9" Padding="8,1" Margin="10,0,0,0" VerticalAlignment="Center" Background="{DynamicResource Brush.Success}">
-                                                    <TextBlock Text="{Binding StatusText}" FontSize="11" FontWeight="SemiBold" Foreground="White" />
+                                                    <TextBlock Text="{Binding StatusText, Converter={StaticResource LocalizedString}}" FontSize="11" FontWeight="SemiBold" Foreground="White" />
                                                 </Border>
                                             </StackPanel>
                                             <TextBlock Style="{StaticResource Text.Caption}" TextWrapping="Wrap">
-                                                <Run Text="{Binding Purpose, Mode=OneWay}" /><Run Text=" · " /><Run Text="{Binding License, Mode=OneWay}" />
+                                                <Run Text="{Binding Purpose, Mode=OneWay, Converter={StaticResource LocalizedString}}" /><Run Text=" · " /><Run Text="{Binding License, Mode=OneWay, Converter={StaticResource LocalizedString}}" />
                                             </TextBlock>
-                                            <TextBlock Text="{Binding Path}" Style="{StaticResource Text.Caption}" TextTrimming="CharacterEllipsis" ToolTip="{Binding Path}"
+                                            <TextBlock Text="{Binding Path, Converter={StaticResource LocalizedString}}" Style="{StaticResource Text.Caption}" TextTrimming="CharacterEllipsis" ToolTip="{Binding Path, Converter={StaticResource LocalizedString}}"
                                                        Visibility="{Binding Path, Converter={StaticResource NullToVisibility}}" />
-                                            <TextBlock Text="{Binding ProgressText}" Style="{StaticResource Text.Caption}" Foreground="{DynamicResource Brush.Accent}"
+                                            <TextBlock Text="{Binding ProgressText, Converter={StaticResource LocalizedString}}" Style="{StaticResource Text.Caption}" Foreground="{DynamicResource Brush.Accent}"
                                                        Visibility="{Binding ProgressText, Converter={StaticResource NullToVisibility}}" />
                                         </StackPanel>
                                     </DockPanel>
@@ -195,34 +195,34 @@
             <!-- Privacy -->
             <Border Style="{StaticResource SectionCard}">
                 <StackPanel>
-                    <TextBlock Text="Privacy" Style="{StaticResource Text.Subtitle}" Margin="0,0,0,6" />
+                    <TextBlock Text="{DynamicResource Privacy}" Style="{StaticResource Text.Subtitle}" Margin="0,0,0,6" />
                     <TextBlock Style="{StaticResource Text.Secondary}" TextWrapping="Wrap" Margin="0,0,0,10"
-                               Text="OrbitConvert converts everything on this computer. It has no account, analytics or telemetry, and never uploads your files. It connects only for tool downloads and update actions that you request." />
-                    <CheckBox Content="Keep a history of conversions (stored locally)" IsChecked="{Binding KeepHistory}" />
+                               Text="{DynamicResource PrivacyDescription}" />
+                    <CheckBox Content="{DynamicResource KeepHistory}" IsChecked="{Binding KeepHistory}" />
                     <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
-                        <Button Content="Open data folder" Command="{Binding OpenDataFolderCommand}" Margin="0,0,8,0" />
-                        <Button Content="Open logs folder" Command="{Binding OpenLogsFolderCommand}" />
+                        <Button Content="{DynamicResource OpenDataFolder}" Command="{Binding OpenDataFolderCommand}" Margin="0,0,8,0" />
+                        <Button Content="{DynamicResource OpenLogsFolder}" Command="{Binding OpenLogsFolderCommand}" />
                     </StackPanel>
-                    <TextBlock Text="{Binding DataFolder}" Style="{StaticResource Hint}" Margin="0,6,0,0" />
+                    <TextBlock Text="{Binding DataFolder, Converter={StaticResource LocalizedString}}" Style="{StaticResource Hint}" Margin="0,6,0,0" />
                 </StackPanel>
             </Border>
 
             <!-- Updates -->
             <Border Style="{StaticResource SectionCard}">
                 <StackPanel>
-                    <TextBlock Text="Updates" Style="{StaticResource Text.Subtitle}" Margin="0,0,0,8" />
-                    <CheckBox Content="Check GitHub for new versions (off by default)" IsChecked="{Binding CheckForUpdates}" />
+                    <TextBlock Text="{DynamicResource Updates}" Style="{StaticResource Text.Subtitle}" Margin="0,0,0,8" />
+                    <CheckBox Content="{DynamicResource CheckUpdates}" IsChecked="{Binding CheckForUpdates}" />
                     <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
-                        <Button Content="Check now" Command="{Binding CheckNowCommand}" />
-                        <Button Content="Download and install" Margin="8,0,0,0" Command="{Binding InstallUpdateCommand}"
+                        <Button Content="{DynamicResource CheckNow}" Command="{Binding CheckNowCommand}" />
+                        <Button Content="{DynamicResource DownloadInstall}" Margin="8,0,0,0" Command="{Binding InstallUpdateCommand}"
                                 Visibility="{Binding CanInstallUpdate, Converter={StaticResource BoolToVisibility}}"
                                 IsEnabled="{Binding IsInstallingUpdate, Converter={StaticResource InverseBool}}" />
-                        <Button Content="Open release page" Margin="8,0,0,0" Command="{Binding OpenUpdateCommand}"
+                        <Button Content="{DynamicResource OpenRelease}" Margin="8,0,0,0" Command="{Binding OpenUpdateCommand}"
                                 Visibility="{Binding UpdateUrl, Converter={StaticResource NullToVisibility}}" />
                     </StackPanel>
-                    <TextBlock Text="{Binding UpdateStatus}" Style="{StaticResource Hint}" Margin="0,6,0,0"
+                    <TextBlock Text="{Binding UpdateStatus, Converter={StaticResource LocalizedString}}" Style="{StaticResource Hint}" Margin="0,6,0,0"
                                Visibility="{Binding UpdateStatus, Converter={StaticResource NullToVisibility}}" />
-                    <TextBlock Text="Nothing is downloaded or installed until you click Download and install. Every installer is verified with SHA-256 first." Style="{StaticResource Hint}" />
+                    <TextBlock Text="{DynamicResource UpdateSafety}" Style="{StaticResource Hint}" />
                 </StackPanel>
             </Border>
 
@@ -231,12 +231,12 @@
                 <DockPanel>
                     <Image DockPanel.Dock="Left" Source="/OrbitConvert;component/Assets/logo-256.png" Width="56" Height="56" VerticalAlignment="Top" Margin="0,0,16,0" />
                     <StackPanel>
-                        <TextBlock Style="{StaticResource Text.Subtitle}"><Run Text="OrbitConvert " /><Run Text="{Binding Version, Mode=OneWay}" /></TextBlock>
-                        <TextBlock Text="Free and open source under the MIT license. Third-party components keep their own licenses." Style="{StaticResource Hint}" />
-                        <TextBlock Text="{Binding EngineVersions}" Style="{StaticResource Hint}" />
+                        <TextBlock Style="{StaticResource Text.Subtitle}"><Run Text="OrbitConvert " /><Run Text="{Binding Version, Mode=OneWay, Converter={StaticResource LocalizedString}}" /></TextBlock>
+                        <TextBlock Text="{DynamicResource OpenSourceLine}" Style="{StaticResource Hint}" />
+                        <TextBlock Text="{Binding EngineVersions, Converter={StaticResource LocalizedString}}" Style="{StaticResource Hint}" />
                         <StackPanel Orientation="Horizontal" Margin="0,6,0,0">
-                            <Button Content="Third-party notices" Command="{Binding OpenNoticesCommand}" Margin="0,0,8,0" />
-                            <Button Content="Project on GitHub" Command="{Binding OpenProjectPageCommand}" />
+                            <Button Content="{DynamicResource ThirdPartyNotices}" Command="{Binding OpenNoticesCommand}" Margin="0,0,8,0" />
+                            <Button Content="{DynamicResource ProjectGithub}" Command="{Binding OpenProjectPageCommand}" />
                         </StackPanel>
                     </StackPanel>
                 </DockPanel>

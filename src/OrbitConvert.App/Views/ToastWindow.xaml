@@ -33,8 +33,8 @@
                 <TextBlock x:Name="MessageText" FontSize="12" Foreground="#B5B8C0" Margin="0,3,0,0" TextWrapping="Wrap" MaxHeight="64"
                            TextTrimming="CharacterEllipsis" />
                 <StackPanel Orientation="Horizontal" Margin="0,9,0,0">
-                    <Button x:Name="OpenFolderButton" Content="Open folder" Click="OnOpenFolder" Margin="0,0,6,0" Style="{StaticResource ToastButton}" />
-                    <Button Content="Dismiss" Click="OnDismiss" Style="{StaticResource ToastButton}" />
+                    <Button x:Name="OpenFolderButton" Content="{DynamicResource OpenFolder}" Click="OnOpenFolder" Margin="0,0,6,0" Style="{StaticResource ToastButton}" />
+                    <Button Content="{DynamicResource Dismiss}" Click="OnDismiss" Style="{StaticResource ToastButton}" />
                 </StackPanel>
             </StackPanel>
         </Grid>
