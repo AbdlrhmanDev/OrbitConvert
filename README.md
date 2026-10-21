@@ -33,7 +33,9 @@ No account. No uploads. No telemetry.
 The installer is the easiest option. It adds OrbitConvert to the Start menu and File Explorer.
 
 1. Go to the [latest release](https://github.com/AbdlrhmanDev/OrbitConvert/releases/latest).
-2. Under **Assets**, download **`OrbitConvert-<version>-win-x64.msi`**.
+2. Under **Assets**, choose the installer for your PC:
+   - Most Windows PCs: download the file ending in **`win-x64.msi`**.
+   - Windows on ARM: download the file ending in **`win-arm64.msi`**.
 3. Double-click the downloaded MSI and follow the setup steps. Administrator rights are not required.
 4. Open **OrbitConvert** from the Windows Start menu.
 
@@ -46,7 +48,9 @@ The installer is the easiest option. It adds OrbitConvert to the Start menu and 
 Choose the portable ZIP if you do not want to install the app:
 
 1. Open the [latest release](https://github.com/AbdlrhmanDev/OrbitConvert/releases/latest).
-2. Under **Assets**, download **`OrbitConvert-<version>-win-x64-portable.zip`**.
+2. Under **Assets**, choose the portable file for your PC:
+   - Most Windows PCs: download the file ending in **`win-x64-portable.zip`**.
+   - Windows on ARM: download the file ending in **`win-arm64-portable.zip`**.
 3. Right-click the ZIP, select **Extract All**, then open the extracted folder.
 4. Run **`OrbitConvert.exe`**.
 
